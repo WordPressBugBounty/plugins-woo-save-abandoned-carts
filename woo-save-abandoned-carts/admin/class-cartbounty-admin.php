@@ -113,6 +113,35 @@ class CartBounty_Admin{
 	}
 
 	/**
+	* Returning setting defaults
+	*
+	* @since    8.4
+	* @return   array or string
+	* @param    string     $value                Value to return
+	*/
+	public function get_defaults( $value = false ){
+		$default_placeholders = $this->get_consent_default_placeholders();
+		$checkout_consent = $default_placeholders['checkout_consent'];
+		$tools_consent = $default_placeholders['tools_consent'];
+
+		$defaults = array(
+			'checkout_consent'				=> $checkout_consent,
+			'checkout_consent_name'			=> 'Checkout consent label',
+			'tools_consent'					=> $tools_consent,
+			'tools_consent_name'			=> 'Tools consent notice',
+		);
+
+		if( $value ){ //If a single value should be returned
+			
+			if( isset( $defaults[$value] ) ){ //Checking if value exists
+				$defaults = $defaults[$value];
+			}
+		}
+
+		return $defaults;
+	}
+
+	/**
 	* Retrieve CartBounty settings
 	*
 	* @since    8.1
@@ -131,6 +160,9 @@ class CartBounty_Admin{
 					'notification_email' 		=> '',
 					'notification_frequency' 	=> 3600000,
 					'exclude_recovered' 		=> false,
+					'email_consent'				=> false,
+					'checkout_consent'			=> '',
+					'tools_consent'				=> '',
 					'lift_email'				=> false,
 					'hide_images'				=> false,
 				);
@@ -605,6 +637,9 @@ class CartBounty_Admin{
 									$exclude_anonymous_carts = $settings['exclude_anonymous_carts'];
 									$notification_email = $settings['notification_email'];
 									$exclude_recovered = $settings['exclude_recovered'];
+									$email_consent = $settings['email_consent'];
+									$checkout_consent = $settings['checkout_consent'];
+									$tools_consent = $settings['tools_consent'];
 									$lift_email = $settings['lift_email'];
 									$hide_images = $settings['hide_images'];
 								?>
@@ -650,6 +685,16 @@ class CartBounty_Admin{
 											<input id="cartbounty-excluded-emails-phones" class="cartbounty-text cartbounty-unavailable" type="text" disabled autocomplete="off" />
 											<p class='cartbounty-additional-information'>
 												<i class='cartbounty-hidden cartbounty-unavailable-notice'><?php echo $this->display_unavailable_notice( 'settings_exclude_carts_by_email_phone' ); ?></i>
+											</p>
+										</div>
+										<div class="cartbounty-settings-group cartbounty-toggle">
+											<label for="cartbounty-hide-images" class="cartbounty-switch">
+												<input id="cartbounty-hide-images" class="cartbounty-checkbox" type="checkbox" name="cartbounty_main_settings[hide_images]" value="1" <?php echo $this->disable_field(); ?> <?php echo checked( 1, $hide_images, false ); ?> autocomplete="off" />
+												<span class="cartbounty-slider round"></span>
+											</label>
+											<label for="cartbounty-hide-images"><?php esc_html_e('Display abandoned cart contents in a list', 'woo-save-abandoned-carts'); ?></label>
+											<p class='cartbounty-additional-information'>
+												<?php esc_html_e('This will only affect how abandoned cart contents are displayed in the list of abandoned carts.', 'woo-save-abandoned-carts'); ?>
 											</p>
 										</div>
 									</div>
@@ -730,22 +775,43 @@ class CartBounty_Admin{
 								</div>
 								<div class="cartbounty-row">
 									<div class="cartbounty-titles-column cartbounty-col-sm-4 cartbounty-col-lg-3">
-										<h4><?php esc_html_e('Text messages', 'woo-save-abandoned-carts'); ?></h4>
+										<h4><?php esc_html_e( 'Consent', 'woo-save-abandoned-carts' ); ?></h4>
 										<p class="cartbounty-titles-column-description">
-											<?php esc_html_e('General settings that may come in handy when sending abandoned cart SMS text messages.', 'woo-save-abandoned-carts'); ?>
+											<?php esc_html_e( 'Settings related to the collection of visitor consent for phone and email in compliance with data protection laws.', 'woo-save-abandoned-carts' ); ?>
 										</p>
 									</div>
 									<div class="cartbounty-settings-column cartbounty-col-sm-8 cartbounty-col-lg-9">
-										<div class="cartbounty-settings-group-container">
+										<div id="cartbounty-consent-settings" class="cartbounty-select-multiple<?php if( $email_consent ){ echo ' cartbounty-checked-parent'; }?>">
 											<div class="cartbounty-settings-group cartbounty-toggle">
-												<label for="cartbounty-international-phone" class="cartbounty-switch cartbounty-unavailable">
-													<input id="cartbounty-international-phone" class="cartbounty-checkbox" type="checkbox" disabled />
+												<label for="cartbounty-email-consent" class="cartbounty-switch">
+													<input id="cartbounty-email-consent" class="cartbounty-checkbox" type="checkbox" name="cartbounty_main_settings[email_consent]" value="1" data-type="email" <?php echo $this->disable_field(); ?> <?php echo checked( 1, $email_consent, false ); ?> autocomplete="off" />
 													<span class="cartbounty-slider round"></span>
 												</label>
-												<label for="cartbounty-international-phone" class="cartbounty-unavailable"><?php esc_html_e( 'Enable easy international phone input', 'woo-save-abandoned-carts' ); ?></label>
+												<label for="cartbounty-email-consent"><?php esc_html_e( 'Enable email consent', 'woo-save-abandoned-carts' ); ?></label>
+											</div>
+											<div class="cartbounty-settings-group cartbounty-toggle">
+												<label for="cartbounty-phone-consent" class="cartbounty-switch cartbounty-unavailable">
+													<input id="cartbounty-phone-consent" class="cartbounty-checkbox" type="checkbox" disabled />
+													<span class="cartbounty-slider round"></span>
+												</label>
+												<label for="cartbounty-phone-consent" class="cartbounty-unavailable"><?php esc_html_e( 'Enable phone number consent', 'woo-save-abandoned-carts' ); ?></label>
 												<p class='cartbounty-additional-information'>
-													<i class='cartbounty-hidden cartbounty-unavailable-notice'><?php echo $this->display_unavailable_notice( 'easy_phone_input' ); ?></i>
+													<i class='cartbounty-hidden cartbounty-unavailable-notice'><?php echo $this->display_unavailable_notice( 'phone_consent' ); ?></i>
 												</p>
+											</div>
+											<div class="cartbounty-toggle-content">
+												<div class="cartbounty-settings-group cartbounty-hidden">
+													<label for="cartbounty-checkout-consent"><?php esc_html_e( 'Checkout consent label', 'woo-save-abandoned-carts' ); ?></label>
+													<div class="cartbounty-content-creation cartbounty-flex">
+														<input id="cartbounty-checkout-consent" class="cartbounty-text" type="text" name="cartbounty_main_settings[checkout_consent]" value="<?php echo esc_attr( $checkout_consent ); ?>" placeholder="<?php echo esc_attr( $this->get_defaults( 'checkout_consent' ) ); ?>" /><?php $this->add_emojis(); ?>
+													</div>
+												</div>
+												<div class="cartbounty-settings-group cartbounty-hidden">
+													<label for="cartbounty-tools-consent"><?php esc_html_e( 'Tools consent notice', 'woo-save-abandoned-carts' ); ?></label>
+													<div class="cartbounty-content-creation cartbounty-flex">
+														<input id="cartbounty-tools-consent" class="cartbounty-text" type="text" name="cartbounty_main_settings[tools_consent]" value="<?php echo esc_attr( $tools_consent ); ?>" placeholder="<?php echo esc_attr( $this->get_defaults( 'tools_consent' ) ); ?>" /><?php $this->add_emojis(); ?>
+													</div>
+												</div>
 											</div>
 										</div>
 									</div>
@@ -783,13 +849,13 @@ class CartBounty_Admin{
 											</p>
 										</div>
 										<div class="cartbounty-settings-group cartbounty-toggle">
-											<label for="cartbounty-hide-images" class="cartbounty-switch">
-												<input id="cartbounty-hide-images" class="cartbounty-checkbox" type="checkbox" name="cartbounty_main_settings[hide_images]" value="1" <?php echo $this->disable_field(); ?> <?php echo checked( 1, $hide_images, false ); ?> autocomplete="off" />
+											<label for="cartbounty-international-phone" class="cartbounty-switch cartbounty-unavailable">
+												<input id="cartbounty-international-phone" class="cartbounty-checkbox" type="checkbox" disabled />
 												<span class="cartbounty-slider round"></span>
 											</label>
-											<label for="cartbounty-hide-images"><?php esc_html_e('Display abandoned cart contents in a list', 'woo-save-abandoned-carts'); ?></label>
+											<label for="cartbounty-international-phone" class="cartbounty-unavailable"><?php esc_html_e( 'Enable easy international phone input', 'woo-save-abandoned-carts' ); ?></label>
 											<p class='cartbounty-additional-information'>
-												<?php esc_html_e('This will only affect how abandoned cart contents are displayed in the list of abandoned carts.', 'woo-save-abandoned-carts'); ?>
+												<i class='cartbounty-hidden cartbounty-unavailable-notice'><?php echo $this->display_unavailable_notice( 'easy_phone_input' ); ?></i>
 											</p>
 										</div>
 									</div>
@@ -3308,6 +3374,12 @@ class CartBounty_Admin{
 		$parts = explode('-', $hash_id); //Splitting GET value into hash and ID
 		$hash = $parts[0];
 		$id = $parts[1];
+		$step_nr = false;
+
+		//Determine recovery step
+		if( isset( $_GET['step'] ) ){
+			$step_nr = $_GET['step'];
+		}
 
 		//Retrieve row from the abandoned cart table in order to check if hashes match
 		$cart_table = $wpdb->prefix . CARTBOUNTY_TABLE_NAME;
@@ -3332,7 +3404,7 @@ class CartBounty_Admin{
 		//If we have received an Unsubscribe request - stop restoring cart and unsubscribe user instead
 		if (isset( $_GET['cartbounty-unsubscribe'])){
 			$wordpress = new CartBounty_WordPress();
-			$wordpress->unsubscribe_user( $id );
+			$wordpress->unsubscribe_user( $id, $step_nr );
 			wp_die( esc_html__('You have successfully unsubscribed from further emails about your shopping cart.', 'woo-save-abandoned-carts'), esc_html__( 'Successfully unsubscribed', 'woo-save-abandoned-carts'), $args = array( 'link_url' => get_site_url(), 'link_text' => esc_html__( 'Return to store', 'woo-save-abandoned-carts') ) );
 		}
 
@@ -3395,21 +3467,122 @@ class CartBounty_Admin{
 	}
 
     /**
-	 * Method tries to move email field higher in the checkout form
+	 * Method edits checkout fields
+	 * Tries to move email field higher in the checkout form and insert additional checkout field
+	 * Adding consent checkbox field
 	 *
 	 * @since    4.5
 	 * @return 	 Array
 	 * @param 	 $fields    Checkout form fields
 	 */ 
-	public function lift_checkout_fields( $fields ) {
+	public function edit_checkout_fields( $fields ) {
 		$lift_email = $this->get_settings( 'settings', 'lift_email' );
+		$checkout_consent = $this->get_checkout_consent();
 		
 		if( $lift_email ){ //Changing the priority and moving the email higher
 			if( isset( $fields['billing_email'] ) ){
 				$fields['billing_email']['priority'] = 4;
 			}
 		}
+
+		$consent_data = $this->get_consent_field_data( $value = false, $fields );
+		$consent_enabled = $consent_data['consent_enabled'];
+		$field_name = $consent_data['field_name'];
+		$consent_position = $consent_data['consent_position'];
+
+		if( $consent_enabled ){
+
+			$fields[$field_name] = apply_filters(
+				'cartbounty_consent_checkbox_args',
+				array(
+					'label' 		=> $checkout_consent,
+					'type' 			=> 'checkbox',
+					'priority' 		=> $consent_position,
+					'required' 		=> false,
+					'default' 		=> false,
+					'clear' 		=> true,
+					'class' 		=> array( 'cartbounty-consent' )
+				)
+			);
+		}
+
 		return $fields;
+	}
+
+	/**
+	 * Retrieve consent field name
+	 *
+	 * @since    8.4
+	 * @return 	 array
+	 */
+	public function get_consent_field_name() {
+		$name = apply_filters( 'cartbounty_consent_email_name', 'billing_email_consent' );
+		return $name;
+	}
+
+	/**
+	 * Retrieve consent field data
+	 *
+	 * @since    8.4
+	 * @return 	 array
+	 * @param 	 $value     Value to return
+	 * @param 	 $fields    Checkout form fields
+	 */
+	public function get_consent_field_data( $value = false, $fields = array() ) {
+		$consent_settings = $this->get_consent_settings();
+		$email_consent_enabled = $consent_settings['email'];
+		$field_name = '';
+		$consent_enabled = false;
+		$consent_position = '';
+
+		if( $email_consent_enabled ){
+			$field_name = $this->get_consent_field_name();
+			$consent_enabled = true;
+
+			if( isset( $fields['billing_email'] ) ){
+				$consent_position = $fields['billing_email']['priority'] + 1;
+			}
+		}
+
+		$result = array(
+			'field_name' 		=>	$field_name,
+			'consent_enabled' 	=>	$consent_enabled,
+			'consent_position' 	=>	$consent_position,
+		);
+
+		if( $value ){ //If a single value should be returned
+			
+			if( isset( $result[$value] ) ){ //Checking if value exists
+				$result = $result[$value];
+			}
+		}
+
+		return $result;
+	}
+
+	/**
+	 * Retrieve customer's saved consent field value
+	 *
+	 * @since    8.4
+	 * @return 	 boolean
+	 * @param    boolean     $saved_cart    		  Customer's abandoned cart data
+	 */
+	public function get_customers_consent( $saved_cart = false ){
+		$consent = false;
+
+		if( !$saved_cart ){
+			$public = new CartBounty_Public( CARTBOUNTY_PLUGIN_NAME_SLUG, CARTBOUNTY_VERSION_NUMBER );
+			$saved_cart = $public->get_saved_cart();
+		}
+		
+		$get_consent_field_data = $this->get_consent_field_data( 'field_name' );
+		$email_consent_field_name = $this->get_consent_field_name();
+
+		if( $get_consent_field_data == $email_consent_field_name && $saved_cart->email_consent ){
+			$consent = true;
+		}
+
+		return $consent;
 	}
 
 	/**
@@ -4373,6 +4546,96 @@ class CartBounty_Admin{
 	}
 
 	/**
+	 * Check consent collection settings status
+	 *
+	 * @since    8.4
+	 * @return   boolean
+	 * @param    string     $value                Value to return
+	 */
+	function get_consent_settings( $value = false ){
+		$settings = $this->get_settings( 'settings' );
+		$consent_settings = array(
+			'email' => false,
+		);
+
+		if( isset( $settings['email_consent'] ) ){
+			$consent_settings['email'] = $settings['email_consent'];
+		}
+
+		if( $value ){ //If a single value should be returned
+			
+			if( isset( $consent_settings[$value] ) ){ //Checking if value exists
+				$consent_settings = $consent_settings[$value];
+			}
+		}
+
+		return $consent_settings;
+	}
+
+	/**
+	 * Retrieve default consent placeholders
+	 *
+	 * @since    8.4
+	 * @return   array
+	 */
+	function get_consent_default_placeholders(){
+		$email_consent_enabled = false;
+		$privacy_policy_url = '';
+		$checkout_consent = esc_attr__( 'Get news and offers via email', 'woo-save-abandoned-carts' );
+		$tools_consent = esc_attr__( 'By entering your email, you agree to get news and offers via email. You can unsubscribe using a link inside the message.', 'woo-save-abandoned-carts' );
+		
+		if ( function_exists( 'get_privacy_policy_url' ) ) { //This function is available startng from WP 4.9.6
+			$privacy_policy_url = get_privacy_policy_url();
+		}
+		
+		if( !empty( $privacy_policy_url ) ){ //If privacy policy url is available, add it to the default text
+			$tools_consent = $tools_consent . ' ' . sprintf(
+				/* translators: %s - URL link */
+				esc_attr__( 'View %sPrivacy policy%s.', 'woo-save-abandoned-carts' ), '<a href="' . esc_attr( esc_url( $privacy_policy_url ) ) . '" target="_blank">', '</a>'
+			);
+		}
+
+		return array(
+			'checkout_consent' => $checkout_consent,
+			'tools_consent' => $tools_consent,
+		);
+	}
+
+	/**
+	 * Get checkout consent value
+	 *
+	 * @since    8.4
+	 * @return   string
+	 */
+	function get_checkout_consent(){
+		$field = array();
+		$field = $this->get_defaults( 'checkout_consent' );
+		$checkout_consent = $this->get_settings( 'settings', 'checkout_consent' );
+		
+		if( trim( $checkout_consent ) != '' ){ //If the value is not empty and does not contain only whitespaces
+			$field = $this->sanitize_field( $checkout_consent );
+		}
+
+		return $field;
+	}
+
+	/**
+	 * Get tools consent value
+	 *
+	 * @since    8.4
+	 * @return   string
+	 */
+	function get_tools_consent(){
+		$field = $this->get_defaults( 'tools_consent' );
+		$tools_consent = $this->get_settings( 'settings', 'tools_consent' );
+
+		if( trim( $tools_consent ) != '' ){ //If the value is not empty and does not contain only whitespaces
+			$field = $this->sanitize_field( $tools_consent );
+		}
+		return $field;
+	}
+
+	/**
 	* Return preview contents according to feature
 	*
 	* @since    7.1
@@ -4504,6 +4767,8 @@ class CartBounty_Admin{
 			'subject',
 			'heading',
 			'content',
+			'checkout_consent',
+			'tools_consent',
 		);
 
 		if( in_array( $key, $content_fields ) ){ //Encoding only content input fields
@@ -4998,8 +5263,8 @@ class CartBounty_Admin{
 	 * Converts the WooCommerce country codes to 3-letter ISO codes
 	 *
 	 * @since    8.2
-	 * @param    string    WooCommerce's 2 letter country code
 	 * @return   string    ISO 3-letter country code
+	 * @param    string    WooCommerce's 2 letter country code
 	 */
 	public function convert_country_code( $country ) {
 		$countries = array(
