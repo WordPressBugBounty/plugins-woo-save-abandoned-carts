@@ -78,13 +78,6 @@ class CartBounty_Admin{
 		    'ajaxurl' => admin_url( 'admin-ajax.php' )
 		);
 
-		if( isset( $_GET['section'] ) ){ //Adding additional script on WordPress recovery page
-			
-			if( $_GET['section'] == 'wordpress' ){
-				wp_enqueue_script( $this->plugin_name . '-micromodal', plugin_dir_url( __FILE__ ) . 'js/micromodal.min.js', array( 'jquery' ), $this->version, false );
-			}
-		}
-
 		if( $screen->id == $cartbounty_admin_menu_page ){ //Load report scripts only on Dashboard
 
 			if( !isset( $_GET['tab'] ) || $_GET['tab'] == 'dashboard' ){
@@ -107,6 +100,7 @@ class CartBounty_Admin{
 			}
 		}
 
+		wp_enqueue_script( $this->plugin_name . '-micromodal', plugin_dir_url( __FILE__ ) . 'js/micromodal.min.js', array( 'jquery' ), $this->version, false );
 		wp_enqueue_script( $this->plugin_name . '-selectize', plugin_dir_url( __FILE__ ) . 'js/selectize.min.js', array( 'jquery' ), $this->version, false );
 		wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/cartbounty-admin.js', array( 'wp-color-picker', 'jquery' ), $this->version, false );
 		wp_localize_script( $this->plugin_name, 'cartbounty_admin_data', $data ); //Sending data over to JS file
@@ -484,26 +478,24 @@ class CartBounty_Admin{
 						require_once plugin_dir_path( __FILE__ ) . 'class-cartbounty-admin-table.php';
 						$table = new CartBounty_Table();
 						$table->prepare_items();
-						$footer_bulk_delete = false;
+						$current_action = $table->current_action();
 
-						if( isset( $_GET['action2'] ) && $_GET['action2'] == 'delete' ){ //Check if bottom Bulk delete action fired
-							$footer_bulk_delete = true;
-						}
-						
 						//Output table contents
 						$message = '';
-						if( 'delete' === $table->current_action() || $footer_bulk_delete ){
 
-							if(!empty($_REQUEST['id'])){ //In case we have a row selected for deletion, process the message otput
-								if(is_array($_REQUEST['id'])){ //If deleting multiple lines from table
-									$deleted_row_count = esc_html(count($_REQUEST['id']));
+						if( $current_action ){
+
+							if( !empty( $_REQUEST['id'] ) ){ //In case we have a row selected, process the message otput
+								$selectd_rows = 1;
+								$action_message = esc_html__( 'Carts deleted: %d', 'woo-save-abandoned-carts' );
+
+								if( is_array( $_REQUEST['id'] ) ){ //If handling multiple lines
+									$selectd_rows = esc_html( count( $_REQUEST['id'] ) );
 								}
-								else{ //If a single row is deleted
-									$deleted_row_count = 1;
-								}
+
 								$message = '<div class="updated below-h2" id="message"><p>' . sprintf(
 									/* translators: %d - Item count */
-									esc_html__('Items deleted: %d', 'woo-save-abandoned-carts' ), esc_html( $deleted_row_count )
+									$action_message, esc_html( $selectd_rows )
 								) . '</p></div>';
 							}
 						}
@@ -566,7 +558,7 @@ class CartBounty_Admin{
 											}
 										?>
 										<div class="cartbounty-section-item-container cartbounty-col-sm-6 cartbounty-col-lg-4">
-											<div class="cartbounty-section-item<?php if($item['connected']){echo ' cartbounty-connected'; }?><?php if(!$item['availability']){echo ' cartbounty-unavailable'; }?>">
+											<div class="cartbounty-section-item<?php if($item['connected']){echo ' cartbounty-connected'; }?><?php if(!$item['availability']){echo ' cartbounty-unavailable'; }?><?php if($item['faded']){echo ' cartbounty-item-faded'; }?>">
 												<?php if($item['availability']){
 													$link = '?page='. CARTBOUNTY .'&tab='. $tab .'&section='. $key;
 													$item['info_link'] = $link;
@@ -608,7 +600,7 @@ class CartBounty_Admin{
 											}
 										?>
 										<div class="cartbounty-section-item-container cartbounty-col-sm-6 cartbounty-col-lg-4">
-											<div class="cartbounty-section-item<?php if($item['connected']){echo ' cartbounty-connected'; }?>">
+											<div class="cartbounty-section-item<?php if($item['connected']){echo ' cartbounty-connected'; }?><?php if($item['faded']){echo ' cartbounty-item-faded'; }?>">
 												<?php $link = '?page='. CARTBOUNTY .'&tab='. $tab .'&section='. $key; ?>
 												<div class="cartbounty-section-image">
 													<?php echo $this->get_connection( $item['connected'], true, $tab ); ?>
@@ -1260,10 +1252,19 @@ class CartBounty_Admin{
 			$wordpress = new CartBounty_WordPress();
 
 			$sections = array(
+				'wordpress'	=> array(
+					'name'				=> 'WordPress',
+					'connected'			=> $wordpress->automation_enabled() ? true : false,
+					'availability'		=> true,
+					'faded'				=> false,
+					'info_link'			=> '',
+					'description'		=> '<p>' . esc_html__("A simple solution for sending abandoned cart reminder emails using WordPress mail server. This recovery option works best if you have a small to medium number of abandoned carts.", 'woo-save-abandoned-carts') . '</p><p>' . esc_html__("If you are looking for something more advanced and powerful, please consider connecting with ActiveCampaign, GetResponse or MailChimp.", 'woo-save-abandoned-carts') . '</p>'
+				),
 				'activecampaign'	=> array(
 					'name'				=> 'ActiveCampaign',
 					'connected'			=> false,
 					'availability'		=> false,
+					'faded'				=> true,
 					'info_link'			=> CARTBOUNTY_ACTIVECAMPAIGN_TRIAL_LINK,
 					'description'		=> '<p>' . esc_html__("ActiveCampaign is an awesome platform that enable you to set up advanced rules for sending abandoned cart recovery emails tailored to customer behavior.", 'woo-save-abandoned-carts') . '</p><p>' . esc_html__("In contrast to MailChimp, it allows sending reminder email series without the requirement to subscribe.", 'woo-save-abandoned-carts') . '</p>'
 				),
@@ -1271,6 +1272,7 @@ class CartBounty_Admin{
 					'name'				=> 'GetResponse',
 					'connected'			=> false,
 					'availability'		=> false,
+					'faded'				=> true,
 					'info_link'			=> CARTBOUNTY_GETRESPONSE_TRIAL_LINK,
 					'description'		=> '<p>' . esc_html__("GetResponse offers efficient and beautifully designed email marketing platform to recover abandoned carts. It is a professional email marketing system with awesome email design options and beautifully pre-designed email templates.", 'woo-save-abandoned-carts') . '</p>'
 				),
@@ -1278,20 +1280,15 @@ class CartBounty_Admin{
 					'name'				=> 'MailChimp',
 					'connected'			=> false,
 					'availability'		=> false,
+					'faded'				=> true,
 					'info_link'			=> CARTBOUNTY_MAILCHIMP_LINK,
 					'description'		=> '<p>' . esc_html__("MailChimp offers a free plan and allows to send personalized reminder emails to your customers, either as one-time messages or a series of follow-up emails, such as sending the first email within an hour of cart abandonment, the second one after 24 hours, and so on.", 'woo-save-abandoned-carts') . '</p><p>' . esc_html__("MailChimp will only send the 1st email in the series unless a user becomes a subscriber.", 'woo-save-abandoned-carts') . '</p>'
-				),
-				'wordpress'	=> array(
-					'name'				=> 'WordPress',
-					'connected'			=> $wordpress->automation_enabled() ? true : false,
-					'availability'		=> true,
-					'info_link'			=> '',
-					'description'		=> '<p>' . esc_html__("A simple solution for sending abandoned cart reminder emails using WordPress mail server. This recovery option works best if you have a small to medium number of abandoned carts.", 'woo-save-abandoned-carts') . '</p><p>' . esc_html__("If you are looking for something more advanced and powerful, please consider connecting with ActiveCampaign, GetResponse or MailChimp.", 'woo-save-abandoned-carts') . '</p>'
 				),
 				'bulkgate'	=> array(
 					'name'				=> 'BulkGate',
 					'connected'			=> false,
 					'availability'		=> false,
+					'faded'				=> true,
 					'info_link'			=> CARTBOUNTY_BULKGATE_TRIAL_LINK,
 					'description'		=> '<p>' . esc_html__("A perfect channel for sending personalized SMS text messages like abandoned cart reminders.", 'woo-save-abandoned-carts') . '</p><p>' . esc_html__("Recover more sales by sending a personal SMS message along with other abandoned cart reminders.", 'woo-save-abandoned-carts') . '</p>'
 				),
@@ -1299,6 +1296,7 @@ class CartBounty_Admin{
 					'name'				=> esc_html__( 'Push notifications', 'woo-save-abandoned-carts' ),
 					'connected'			=> false,
 					'availability'		=> false,
+					'faded'				=> true,
 					'info_link'			=> CARTBOUNTY_PUSH_NOTIFICATION_LINK,
 					'description'		=> '<p>' . esc_html__("With no requirement for an email or phone number, web push notifications provide a low-friction, real-time, personal and efficient channel for sending abandoned cart reminders.", 'woo-save-abandoned-carts') . '</p><p>' . esc_html__("Additionally, notifications can be sent even after the user has closed the website, providing a higher chance of engaging them to complete their purchase.", 'woo-save-abandoned-carts') . '</p>'
 				),
@@ -1306,6 +1304,7 @@ class CartBounty_Admin{
 					'name'				=> 'Webhook',
 					'connected'			=> false,
 					'availability'		=> false,
+					'faded'				=> true,
 					'info_link'			=> CARTBOUNTY_WEBHOOK_LINK,
 					'description'		=> '<p>' . sprintf(
 						/* translators: %1$s - Link start, %2$s - Link start, %3$s - Link end */
@@ -1320,18 +1319,21 @@ class CartBounty_Admin{
 					'name'				=> esc_html__('Exit Intent', 'woo-save-abandoned-carts'),
 					'connected'			=> $this->get_settings( 'exit_intent', 'status' ) ? true : false,
 					'availability'		=> true,
+					'faded'				=> false,
 					'description'		=> '<p>' . esc_html__("Save more recoverable abandoned carts by showcasing a popup message right before your customer tries to leave and offer an option to save his shopping cart by entering his email.", 'woo-save-abandoned-carts') . '</p>'
 				),
 				'early_capture'	=> array(
 					'name'				=> esc_html__('Early capture', 'woo-save-abandoned-carts'),
 					'connected'			=> false,
 					'availability'		=> true,
+					'faded'				=> true,
 					'description'		=> '<p>' . esc_html__('Try saving more recoverable abandoned carts by enabling Early capture to collect customer’s email or phone right after the "Add to cart" button is clicked.', 'woo-save-abandoned-carts') . '</p>'
 				),
 				'tab_notification'	=> array(
 					'name'				=> esc_html__('Tab notification', 'woo-save-abandoned-carts'),
 					'connected'			=> false,
 					'availability'		=> true,
+					'faded'				=> true,
 					'description'		=> '<p>' . esc_html__('Decrease shopping cart abandonment by grabbing customer attention and returning them to your store after they have switched to a new browser tab with Tab notification.', 'woo-save-abandoned-carts') . '</p>'
 				)
 			);
@@ -1630,7 +1632,7 @@ class CartBounty_Admin{
 														<div class="cartbounty-settings-group">
 															<h4><?php esc_html_e('Preview', 'woo-save-abandoned-carts'); ?></h4>
 															<button type="button" class='cartbounty-button button-secondary cartbounty-progress cartbounty-preview-email' data-nonce='<?php echo esc_attr( $preview_email_nonce ); ?>' <?php echo $this->disable_field(); ?>><?php esc_html_e('Preview email', 'woo-save-abandoned-carts'); ?></button>
-															<?php echo $wordpress->output_modal_container(); ?>
+															<?php echo $this->output_modal_container( 'email-preview' ); ?>
 														</div>
 														<div class="cartbounty-settings-group">
 															<label for="cartbounty-send-test"><?php esc_html_e('Send a test email to', 'woo-save-abandoned-carts'); ?></label>
@@ -5244,7 +5246,7 @@ class CartBounty_Admin{
 		
 		if( isset( $_GET['page'] ) && $_GET['page'] == CARTBOUNTY_PLUGIN_NAME_SLUG ){ //If delete action coming from CartBounty
 
-			if( isset( $_GET['action'] ) && $_GET['action'] == 'delete' || isset( $_GET['action2'] ) && $_GET['action2'] == 'delete' ){ //Check if any delete action fired including bottom Bulk delete action
+			if( isset( $_GET['action'] ) && $_GET['action'] == 'delete' ){ //Check if any delete action fired including bottom Bulk delete action
 
 				$nonce = false;
 
@@ -5257,6 +5259,26 @@ class CartBounty_Admin{
 				}
 			}
 		}
+	}
+
+	/**
+	* Return email preview modal container
+	*
+	* @since    7.0
+	* @return   HTML
+	* @param    string    $modal_id              Identifier to distinguish modal windows from one another
+	*/
+	public function output_modal_container( $modal_id = false ){
+		$output = '';
+		$output .= '<div class="cartbounty-modal" id="cartbounty-modal-'. esc_attr( $modal_id ) .'" aria-hidden="true">';
+			$output .= '<div class="cartbounty-modal-overlay" tabindex="-1" data-micromodal-close>';
+				$output .= '<div class="cartbounty-modal-content-container" role="dialog" aria-modal="true">';
+					$output .= '<button type="button" class="cartbounty-close-modal" aria-label="'. esc_html__("Close", 'woo-save-abandoned-carts') .'" data-micromodal-close></button>';
+					$output .= '<div class="cartbounty-modal-content" id="cartbounty-modal-content-'. esc_attr( $modal_id ) .'"></div>';
+				$output .= '</div>';
+			$output .= '</div>';
+		$output .= '</div>';
+		return $output;
 	}
 
 	/**
