@@ -572,8 +572,11 @@ class CartBounty_Public{
 
 		$bot = false;
 
-		if( ( !isset( $_POST['cartbounty_bot_test'] ) || sanitize_text_field( $_POST['cartbounty_bot_test'] ) != '1' ) ){ 
-			$bot = true;
+		if( !apply_filters( 'cartbounty_disable_input_bot_test', false ) ){
+			
+			if( ( !isset( $_POST['cartbounty_bot_test'] ) || sanitize_text_field( $_POST['cartbounty_bot_test'] ) != '1' ) ){ 
+				$bot = true;
+			}
 		}
 
 		return $bot;
