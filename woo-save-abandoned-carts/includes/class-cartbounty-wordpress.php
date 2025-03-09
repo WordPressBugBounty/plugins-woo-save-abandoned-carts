@@ -93,7 +93,7 @@ class CartBounty_WordPress{
 			$status = sprintf( '<span class="status active">%s</span>', esc_html__( 'Active', 'woo-save-abandoned-carts' ) );
 		}
 
-		echo $status;
+		return $status;
 	}
 
 	/**
@@ -691,10 +691,12 @@ class CartBounty_WordPress{
      */
 	public function get_stats(){
 		$count = 0;
-		$sent_emails = get_option('cartbounty_automation_sends');
-		if($sent_emails > 0){
+		$sent_emails = get_option( 'cartbounty_automation_sends' );
+		
+		if( $sent_emails > 0 ){
 			$count = $sent_emails;
 		}
+
 		return $count;
 	}
 
