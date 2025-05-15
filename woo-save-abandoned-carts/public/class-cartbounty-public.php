@@ -91,6 +91,7 @@ class CartBounty_Public{
 			'checkout_fields' 			=> $this->get_checkout_fields(),
 			'custom_email_selectors' 	=> $this->get_custom_email_selectors(),
 			'custom_phone_selectors' 	=> $this->get_custom_phone_selectors(),
+			'custom_button_selectors' 	=> $this->get_custom_add_to_cart_button_selectors(),
 			'consent_field' 			=> $admin->get_consent_field_data( 'field_name' ),
 			'email_validation' 			=> $email_validation,
 			'phone_validation' 			=> apply_filters( 'cartbounty_phone_validation', '^[+0-9\s]\s?\d[0-9\s-.]{6,30}$'),
@@ -729,7 +730,7 @@ class CartBounty_Public{
 
 		//Retrieving cart total value and currency
 		$cart_total = WC()->cart->total;
-		$cart_currency = get_woocommerce_currency();
+		$cart_currency = $this->get_selected_currency();
 		$current_time = current_time( 'mysql', false ); //Retrieving current time
 		$session_id = WC()->session->get( 'cartbounty_session_id' ); //Check if the session is already set
 		
@@ -803,6 +804,49 @@ class CartBounty_Public{
 			'session_id' 	=> $session_id,
 			'cart_contents' => $cart_contents
 		);
+	}
+
+	/**
+	 * Returns currently selected currency
+	 * First going through session variable to check if currency has been set here since some currency switcher plugins may store this here
+	 * After that look inside cart data for currency information since some plugins store it there
+	 * Supporting these plugins by default:
+	 * - WooPayments: Integrated WooCommerce Payments (built-in currency switcher)				[wcpay_currency]
+	 * - YayCurrency – WooCommerce Multi-Currency Switcher 										[yay_currency_code]
+	 *
+	 * @since    8.7
+	 * @return   string
+	 */
+	function get_selected_currency(){
+		$currency_keys = array(
+			'wcpay_currency',
+		);
+
+		foreach( $currency_keys as $key ){
+
+			if( is_user_logged_in() ){ //For signed-in customers
+				$currency = get_user_meta( get_current_user_id(), $key, true );
+			
+			}else{
+				$currency = WC()->session->get( $key );
+			}
+
+			if( $currency ){
+				return $currency;
+			}
+		}
+
+		if( did_action( 'wp_loaded' ) ){
+			//In case of YayCurrency, we must look inside cart data for stored currency code
+			foreach( WC()->cart->get_cart() as $cart_item ){
+				
+				if( isset( $cart_item['yay_currency_code'] ) ){
+					return $cart_item['yay_currency_code'];
+				}
+			}
+		}
+
+		return get_woocommerce_currency();
 	}
 
 	/**
@@ -930,6 +974,8 @@ class CartBounty_Public{
 	public function restore_block_checkout_fields() {
 
 		if( !apply_filters( 'cartbounty_restore_block_checkout', true ) ) return;
+
+		if( !function_exists( 'is_admin' ) || !function_exists( 'is_user_logged_in' ) ) return;
 
 		if( is_admin() || is_user_logged_in() ) return;
 
@@ -1722,4 +1768,27 @@ class CartBounty_Public{
 		return implode( ', ', $selectors );
 	}
 
+	/**
+	 * Get custom "Add to cart" button selectors
+	 * Ability to use a filter to edit this list
+	 *
+	 * Supporting these plugins by default:
+	 * - CartBounty custom add to cart button class								[cartbounty]
+	 * - WooCommerce 															[woocommerce]
+	 * - YITH WooCommerce Frequently Bought Together by YITH					[yith-wfbt]
+	 *
+	 * @since    10.7
+	 * @return   string
+	 */
+	function get_custom_add_to_cart_button_selectors(){
+		$selectors = apply_filters( 'cartbounty_custom_add_to_cart_button_selectors',
+			array(
+				'cartbounty' 	=> '.cartbounty-add-to-cart',
+				'woocommerce' 	=> '.add_to_cart_button, .ajax_add_to_cart, .single_add_to_cart_button',
+				'yith-wfbt' 	=> '.yith-wfbt-submit-button',
+			)
+		);
+
+		return implode( ', ', $selectors );
+	}
 }
