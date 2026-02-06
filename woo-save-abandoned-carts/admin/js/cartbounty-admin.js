@@ -51,6 +51,7 @@
 				},
 				multiple: false
 			}).on('select', function(){ //It also has "open" and "close" events
+				var automation = button.data('automation'); //Number ID that has been triggered
 				var attachment = custom_uploader.state().get('selection').first().toJSON();
 				var image_url = attachment.url;
 
@@ -59,9 +60,13 @@
  					image_url = thumbnail;
  				}
 				button.html('<img src="' + image_url + '">');
-				var input_field = jQuery('#cartbounty-custom-image');
-				var remove_button = jQuery('#cartbounty-remove-custom-image');
-				
+				if(typeof automation !== 'undefined'){ //If multiple items exist on the page
+					var input_field = jQuery('#cartbounty-custom-image-' + automation);
+					var remove_button = jQuery('#cartbounty-remove-custom-image-' + automation);
+				}else{ //In case of a single item on page
+					var input_field = jQuery('#cartbounty-custom-image');
+					var remove_button = jQuery('#cartbounty-remove-custom-image');
+				}
 				input_field.val(attachment.id);
 				remove_button.show();
 
@@ -71,41 +76,53 @@
 		function removeCustomImage(e){ //Removing Custom image
 			e.preventDefault();
 			var button = jQuery(this).hide();
-			var input_field = jQuery('#cartbounty-custom-image');
-			var add_button = jQuery('#cartbounty-upload-custom-image');
+			var automation = button.data('automation'); //Number ID that has been triggered
+
+			if(typeof automation !== 'undefined'){ //If multiple items exist on the page
+				var input_field = jQuery('#cartbounty-custom-image-' + automation);
+				var add_button = jQuery('#cartbounty-upload-custom-image-' + automation);
+			}else{ //In case of a single item on page
+				var input_field = jQuery('#cartbounty-custom-image');
+				var add_button = jQuery('#cartbounty-upload-custom-image');
+			}
 
 			input_field.val('');
 			add_button.html('<input type="button" class="cartbounty-button button-secondary button" value="Add a custom image">');
 		};
 
-		function getPreviewData( button, action ){
+		function getPreviewData( button, automation, action ){
 			var data = {
 				nonce				: button.data('nonce'),
 				action				: action,
-				email				: jQuery('#cartbounty-send-test').val(),
-				subject				: jQuery('#cartbounty-automation-subject').val(),
-				main_title			: jQuery('#cartbounty-automation-heading').val(),
-				content				: jQuery('#cartbounty-automation-content').val(),
-				main_color			: jQuery('#cartbounty-template-main-color').val(),
-				button_color		: jQuery('#cartbounty-template-button-color').val(),
-				text_color			: jQuery('#cartbounty-template-text-color').val(),
-				background_color	: jQuery('#cartbounty-template-background-color').val()
+				step				: automation,
+				email				: jQuery('#cartbounty-send-test-' + automation).val(),
+				subject				: jQuery('#cartbounty-automation-subject-' + automation).val(),
+				main_title			: jQuery('#cartbounty-automation-heading-' + automation).val(),
+				content				: jQuery('#cartbounty-automation-content-' + automation).val(),
+				main_color			: jQuery('#cartbounty-template-main-color-' + automation).val(),
+				button_color		: jQuery('#cartbounty-template-button-color-' + automation).val(),
+				text_color			: jQuery('#cartbounty-template-text-color-' + automation).val(),
+				background_color	: jQuery('#cartbounty-template-background-color-' + automation).val(),
+				include_image		: jQuery('#cartbounty-automation-include-image-' + automation).prop('checked'),
+				main_image			: jQuery('#cartbounty-custom-image-' + automation).val(),
 			};
+
 			return data;
 		}
 
 		function previewEmail(e){
 			e.preventDefault();
 			var button = jQuery(this)
-			var data = getPreviewData( button, "email_preview" );
+			var automation = button.data('automation');
+			var data = getPreviewData( button, automation, "email_preview" );
 
 			jQuery.post(cartbounty_admin_data.ajaxurl, data,
 			function(response){
-				var content = jQuery('#cartbounty-modal-content-email-preview');
-				var modal = jQuery('#cartbounty-modal-email-preview');
+				var content = jQuery('#cartbounty-modal-content-' + automation);
+				var modal = jQuery('#cartbounty-modal-' + automation);
 				modal.addClass('content-loaded');
 				content.html(response.data);
-				MicroModal.show('cartbounty-modal-email-preview', {
+				MicroModal.show('cartbounty-modal-' + automation, {
 					onClose(){ 
 						content.empty(); //Removing email preview once preview closed
 					}
@@ -117,9 +134,9 @@
 		function sendTestEmail(e){
 			e.preventDefault();
 			var button = jQuery(this);
-			var email_data = jQuery('#cartbounty-send-test').val();
+			var automation = button.data('automation');
 			var label = button.closest('.cartbounty-settings-group').find('label');
-			var data = getPreviewData( button, "send_test" );
+			var data = getPreviewData( button, automation, "send_test" );
 			label.find('.license-status').remove();
 			
 			jQuery.post(cartbounty_admin_data.ajaxurl, data,
@@ -140,7 +157,7 @@
 				action		: "force_sync"
 			};
 
-			jQuery.post(cartbounty_admin_data.ajaxurl, data, //Ajaxurl coming from localized script and contains the link to wp-admin/admin-ajax.php file that handles AJAX requests on Wordpress
+			jQuery.post(cartbounty_admin_data.ajaxurl, data, //Ajaxurl coming from localized script and contains the link to wp-admin/admin-ajax.php file that handles AJAX requests on WordPress
 			function(response){
 				button.removeClass('cartbounty-loading');
 			});
@@ -157,6 +174,46 @@
 			}else{
 				jQuery(this).parent().removeClass('cartbounty-checked'); //Necessary to show/hide small text additions
 				jQuery(this).parent().parent().removeClass('cartbounty-checked-parent');
+			}
+		}
+
+		function addStepStatusClass(){ //Adding or removing a class in case if a step should not be available
+			var step = jQuery(this).closest('.cartbounty-step');
+			var current_automation = step.data('automation-step'); //Automation step number that has been triggered
+
+			//Must check status of steps, so we would know which ones are enabled and which ones are disabled
+			var all_steps = jQuery('.cartbounty-step');
+
+			var disabled_steps = [];
+			var active_steps = [];
+
+			for (var i = all_steps.length - 1; i >= 0; i--) { //Looping through all steps to see which ones are disabled
+				var step_number = jQuery(all_steps[i]).data('automation-step');
+				var checked = jQuery(all_steps[i]).find('.cartbounty-step-controller input').prop('checked');
+				if(!checked){ //If step is disabled, add it to the disabled steps array
+					disabled_steps.push(step_number);	
+				}else{
+					active_steps.push(step_number);
+				}
+			}
+
+			for (var i = active_steps.length - 1; i >= 0; i--) { //Looping through active steps to enable ones that should be available
+				if(active_steps[i] == 0){ //If first step is enabled, activate 2nd step
+					jQuery("[data-automation-step=1]").removeClass('cartbounty-step-disabled');
+
+				}else if(active_steps[i] == 1){ //If second step is enabled, enable 3rd step
+					jQuery("[data-automation-step=2]").removeClass('cartbounty-step-disabled');
+				}
+			}
+
+			for (var i = disabled_steps.length - 1; i >= 0; i--) { //Looping through disabled steps to disable ones that should not be active and closing disabled steps if they were open
+				if(disabled_steps[i] == 0){ //If first step is disabled, deactivate 2nd and 3rd steps
+					jQuery("[data-automation-step=1]").addClass('cartbounty-step-disabled').removeClass('cartbounty-step-active');
+					jQuery("[data-automation-step=2]").addClass('cartbounty-step-disabled').removeClass('cartbounty-step-active');
+
+				}else if(disabled_steps[i] == 1){ //If second step is disabled, deactivate 3rd step
+					jQuery("[data-automation-step=2]").addClass('cartbounty-step-disabled').removeClass('cartbounty-step-active');
+				}
 			}
 		}
 
@@ -397,6 +454,7 @@
 		jQuery(".cartbounty-disable-submit").on("keypress", disableSubmitOnEnter );
 		jQuery("#force_sync").on("click", force_sync );
 		jQuery(".cartbounty-toggle .cartbounty-control-visibility").on("click", addCheckedClass );
+		jQuery(".cartbounty-step-controller").on("click", addStepStatusClass );
 		jQuery(".cartbounty-unavailable").on("click", addUnavailableClass );
 		jQuery("#cartbounty-abandoned-cart-stats-options .cartbounty-unavailable").on("click", addUnavailableReportClass );
 		jQuery(".cartbounty-unavailable .cartbounty-section-image, #cartbounty-sections .cartbounty-unavailable a").on("click", disableLink );

@@ -3,9 +3,9 @@ Donate link: https://www.cartbounty.com
 Contributors: streamlinestar, nauriskolats
 Tags: woocommerce, abandoned carts, cart abandonment, exit popup, activecampaign
 Requires at least: 4.6
-Tested up to: 6.8
+Tested up to: 6.9
 Requires PHP: 7.0
-Stable tag: 8.8
+Stable tag: 8.10
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -37,16 +37,18 @@ CartBounty saves and displays all shopping cart activity from the moment a produ
 * Get notified about newly abandoned carts
 * Export abandoned carts (**Pro**)
 * Prevent bots from leaving abandoned carts using Google reCAPTCHA (**Pro**)
+* Magic login to automatically sign in registered customers when they open their recovery link for faster checkout and improved UX (**Pro**)
 
 ## Automate abandoned cart recovery
 
 Save your time with automated abandoned cart recovery and focus your energy on the important stuff.
 
 * Send abandoned cart reminders using WordPress mail server
-* Send abandoned cart email series using [ActiveCampaign](https://www.activecampaign.com/?_r=5347LGDC), [GetResponse](https://www.getresponse.com/?a=vPJGRchyVX&c=cartbounty_readme) and [MailChimp](http://eepurl.com/hHjfrX) (**Pro**)
+* Send abandoned cart email series using [ActiveCampaign](https://try.activecampaign.com/start), [GetResponse](https://www.getresponse.com/?a=vPJGRchyVX&c=cartbounty_readme) and [MailChimp](http://eepurl.com/hHjfrX) (**Pro**)
 * Use [web push notifications](https://www.cartbounty.com/web-push-notifications-abandoned-cart-recovery/) to send low-friction, real-time, personal and efficient reminders that don't require an email or a phone number (**Pro**)
-* Use webhook to send abandoned cart data and create powerful automations in apps like [Make (former Integromat)](https://www.make.com/en?pc=cartbounty), [Pabbly](https://payments.pabbly.com/api/affurl/RVYZ07kQyUZ0Z1HUKZ1m/xciq3ahCAzNG3CSo?target=9Z2AHyhSldo6KI1Fn), Zapier or similar (**Pro**)
+* Use [WhatsApp](https://www.cartbounty.com/whatsapp-abandoned-cart-recovery-reminders) to send highly engaging abandoned cart reminder messages (**Pro**)
 * Send SMS text message reminders using [BulkGate](https://portal.bulkgate.com/join/55713) (**Pro**)
+* Use webhook to send abandoned cart data and create powerful automations in apps like [Make (former Integromat)](https://www.make.com/en?pc=cartbounty), [Pabbly](https://payments.pabbly.com/api/affurl/RVYZ07kQyUZ0Z1HUKZ1m/xciq3ahCAzNG3CSo?target=9Z2AHyhSldo6KI1Fn), Zapier or similar (**Pro**)
 * [Personalize messages](https://www.cartbounty.com/personalization-tags/) with dynamic content (**Pro**)
 * Generate and send unique coupon codes (**Pro**)
 * Track message open, click-through, recovery and unsubscribe rates (**Pro**)
@@ -54,7 +56,7 @@ Save your time with automated abandoned cart recovery and focus your energy on t
 * Restore Custom product fields (Product addons) and WooCommerce Product Bundles (**Pro**)
 * Exclude carts from abandoned cart recovery based on specific products or product categories, countries, languages, IP addresses, and other criteria (**Pro**)
 * Pause / Resume / Restart individual abandoned cart recovery (**Pro**)
-* Translate emails, push notifications and SMS text messages using [WPML](https://wpml.org/?aid=447227&affiliate_key=0a2ZxRioMm8S), Loco translate and GTranslate plugins (**Pro**)
+* Translate emails, push notifications, WhatsApp and SMS text messages using [WPML](https://wpml.org/?aid=447227&affiliate_key=0a2ZxRioMm8S), Loco translate and GTranslate plugins (**Pro**)
 
 ## Get more leads and reduce cart abandonment
 
@@ -107,7 +109,7 @@ Once the cart is abandoned, an automated reminder or a series of multiple remind
 
 The free version of CartBounty offers a basic solution for sending abandoned cart recovery emails using default WordPress mail server. This recovery option works well if you have a small to medium number of abandoned carts.
 
-Upgrade to [CartBounty Pro](https://www.cartbounty.com) to setup and send automated abandoned cart recovery Push notifications, emails and SMS text messages using [ActiveCampaign](https://www.activecampaign.com/?_r=5347LGDC)*, [GetResponse](https://www.getresponse.com/?a=vPJGRchyVX&c=cartbounty_free_readme)*, [MailChimp](http://eepurl.com/hHjfrX)* or [BulkGate](https://portal.bulkgate.com/join/55713)*.
+Upgrade to [CartBounty Pro](https://www.cartbounty.com) to setup and send automated abandoned cart recovery Push notifications, emails, WhatsApp and SMS text messages using [ActiveCampaign](https://www.activecampaign.com/?_r=5347LGDC)*, [GetResponse](https://www.getresponse.com/?a=vPJGRchyVX&c=cartbounty_free_readme)*, [MailChimp](http://eepurl.com/hHjfrX)*, [WhatsApp](https://www.cartbounty.com/whatsapp-abandoned-cart-recovery-reminders)* or [BulkGate](https://portal.bulkgate.com/join/55713)*.
 
 = What are anonymous carts? =
 
@@ -131,7 +133,7 @@ Learn more about [Exit Intent Technology](https://www.cartbounty.com/exit-intent
 
 The public-facing components of CartBounty, such as the Exit Intent popup and WordPress recovery emails, can be easily customized using the plugin's settings. However, if you need more advanced customization options, you can use the pre-built CartBounty templates or take advantage of the available actions and filters.
 
-You will find all available template files inside **/plugins/woo-save-abandoned-carts-pro/templates** folder. When you open these files, you will notice they all contain hooks that allow you to add, edit or remove content without the need to edit template files themselves. This method protects against plugin upgrade issues, as the template files can be left completely untouched.
+You will find all available template files inside **/plugins/woo-save-abandoned-carts/templates** folder. When you open these files, you will notice they all contain hooks that allow you to add, edit or remove content without the need to edit template files themselves. This method protects against plugin upgrade issues, as the template files can be left completely untouched.
 
 Please copy the template file you require to your active theme to keep your customization intact after plugin updates. You can copy them to either one of these locations:
 
@@ -333,12 +335,8 @@ In addition, the Pro version allows you to select if guests from specific countr
 
 == Changelog ==
 
-= 8.8 =
-* Improved Dashboard (abandoned cart report) loading performance
-* Improved detection of abandoned carts if WooCommerce session ID changes
-* Improved how cart contents are stored to increase efficiency
-* Improved Exit Intent popup closing UX
-* Restricted abandoned cart deletion to administrators only
-* Transitioned from relying on WordPress transients to a custom transient management system
+= 8.10 =
+* Improved compatibility with the latest WooCommerce blocks checkout field restoration
+* Code refactoring
 
 [See changelog for all versions](https://raw.githubusercontent.com/Streamlinelv/woo-save-abandoned-carts/master/changelog.txt).

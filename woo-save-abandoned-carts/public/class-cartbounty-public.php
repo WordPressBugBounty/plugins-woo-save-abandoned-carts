@@ -10,7 +10,6 @@
  * @subpackage CartBounty - Save and recover abandoned carts for WooCommerce/public
  * @author     Streamline.lv
  */
- 
 class CartBounty_Public{
 	
 	/**
@@ -32,6 +31,27 @@ class CartBounty_Public{
 	private $version;
 
 	/**
+	 * @since    8.9
+	 * @access   protected
+	 * @var      CartBounty_Admin    $admin    Provides methods to control and extend the plugin's admin area.
+	 */
+	protected $admin = null;
+
+	/**
+	 * @since 8.9
+	 * @access protected
+	 * @return CartBounty_Admin
+	 */
+	protected function admin(){
+		
+		if( $this->admin === null ){
+			$this->admin = new CartBounty_Admin( CARTBOUNTY_PLUGIN_NAME_SLUG, CARTBOUNTY_VERSION_NUMBER );
+		}
+
+		return $this->admin;
+	}
+
+	/**
 	 * Initialize the class and set its properties.
 	 *
 	 * @since    1.0
@@ -39,7 +59,6 @@ class CartBounty_Public{
 	 * @param    string    $version    The version of this plugin.
 	 */
 	public function __construct( $plugin_name, $version ){
-		global $wpdb;
 		$this->plugin_name = $plugin_name;
 		$this->version = $version;
 	}
@@ -65,7 +84,7 @@ class CartBounty_Public{
 
 		if( !class_exists( 'WooCommerce' ) ) return; //If WooCommerce does not exist
 
-		$admin = new CartBounty_Admin( CARTBOUNTY_PLUGIN_NAME_SLUG, CARTBOUNTY_VERSION_NUMBER );
+		$admin = $this->admin();
 		$admin_ajax = admin_url( 'admin-ajax.php' );
 		$email_validation = apply_filters( 'cartbounty_email_validation', '^[^\s@]+@[^\s@]+\.[^\s@]{2,}$');
 
@@ -118,7 +137,7 @@ class CartBounty_Public{
 
 		if( $this->is_bot() ) return;
 
-		$admin = new CartBounty_Admin( CARTBOUNTY_PLUGIN_NAME_SLUG, CARTBOUNTY_VERSION_NUMBER );
+		$admin = $this->admin();
 
 		if( $this->cart_recoverable() ){ //If cart is recoverable
 			$anonymous = false;
@@ -162,7 +181,7 @@ class CartBounty_Public{
 	 */
 	function create_new_cart( $cart = array(), $user_data = array(), $anonymous = false, $user_ip = '' ){
 		global $wpdb;
-		$admin = new CartBounty_Admin( CARTBOUNTY_PLUGIN_NAME_SLUG, CARTBOUNTY_VERSION_NUMBER );
+		$admin = $this->admin();
 		$cart_table = $wpdb->prefix . CARTBOUNTY_TABLE_NAME;
 
 		//In case if the cart has no items in it, we must delete the cart
@@ -252,7 +271,7 @@ class CartBounty_Public{
 	function update_cart( $cart = array(), $user_data = array(), $anonymous = false, $user_ip = '' ){
 		//In case if the cart has no items in it, we must delete the cart
 		if( empty( $cart['cart_contents'] ) ){
-			$admin = new CartBounty_Admin( CARTBOUNTY_PLUGIN_NAME_SLUG, CARTBOUNTY_VERSION_NUMBER );
+			$admin = $this->admin();
 			$admin->clear_cart_data();
 			return;
 		}
@@ -286,12 +305,12 @@ class CartBounty_Public{
 	 * Method updates only cart related data excluding customer details
 	 *
 	 * @since    5.0
-	 * @param    Array    	$cart    		Cart contents inclding cart session ID
+	 * @param    Array    	$cart    		Cart contents including cart session ID
 	 * @param    string     $user_ip    	User's IP address
 	 */
 	function update_cart_data( $cart, $user_ip = '' ){
 		global $wpdb;
-		$admin = new CartBounty_Admin( CARTBOUNTY_PLUGIN_NAME_SLUG, CARTBOUNTY_VERSION_NUMBER );
+		$admin = $this->admin();
 		$cart_table = $wpdb->prefix . CARTBOUNTY_TABLE_NAME;
 		
 		$updated_rows = $wpdb->query(
@@ -325,13 +344,13 @@ class CartBounty_Public{
 	 * Method updates both customer data and contents of the cart
 	 *
 	 * @since    5.0
-	 * @param    Array    	$cart    		Cart contents inclding cart session ID
+	 * @param    Array    	$cart    		Cart contents including cart session ID
 	 * @param    Array    	$user_data    	User's data
 	 * @param    string     $user_ip    	User's IP address
 	 */
 	function update_cart_and_user_data( $cart, $user_data, $user_ip = '' ){
 		global $wpdb;
-		$admin = new CartBounty_Admin( CARTBOUNTY_PLUGIN_NAME_SLUG, CARTBOUNTY_VERSION_NUMBER );
+		$admin = $this->admin();
 		$cart_table = $wpdb->prefix . CARTBOUNTY_TABLE_NAME;
 		$other_fields = NULL;
 		$cart_source = $this->get_cart_source();
@@ -423,7 +442,7 @@ class CartBounty_Public{
 		global $wpdb;
 		$cart_table = $wpdb->prefix . CARTBOUNTY_TABLE_NAME;
 		$identifiable = false;
-		$admin = new CartBounty_Admin(CARTBOUNTY_PLUGIN_NAME_SLUG, CARTBOUNTY_VERSION_NUMBER);
+		$admin = $this->admin();
 		$where_sentence = $admin->get_where_sentence('recoverable');
 		$cart = $this->read_cart();
 
@@ -450,7 +469,7 @@ class CartBounty_Public{
 	 * @return   Array
 	 */
 	function get_user_data(){
-		$admin = new CartBounty_Admin( CARTBOUNTY_PLUGIN_NAME_SLUG, CARTBOUNTY_VERSION_NUMBER );
+		$admin = $this->admin();
 		$user_data = array(
 			'name'			=> '',
 			'surname'		=> '',
@@ -617,14 +636,14 @@ class CartBounty_Public{
 	 * @return   boolean
 	 * @param    array         $cart    			Cart data
 	 * @param    boolean       $user_ip    			Visitor's IP address
-	 * @param    boolean       $ignore_cooldown    	If cooldown should be igonerd or not. Used when reseting abandoned cart data for registered users
+	 * @param    boolean       $ignore_cooldown    	If cooldown should be igonerd or not. Used when resetting abandoned cart data for registered users
 	 */
 	function cart_saved( $cart, $user_ip = '', $ignore_cooldown = false ){
 		$saved = false;
 
 		if( $cart['session_id'] !== NULL ){
 			global $wpdb;
-			$admin = new CartBounty_Admin( CARTBOUNTY_PLUGIN_NAME_SLUG, CARTBOUNTY_VERSION_NUMBER );
+			$admin = $this->admin();
 			$cart_table = $wpdb->prefix . CARTBOUNTY_TABLE_NAME;
 			$time = $admin->get_time_intervals();
 			$cooldown_period = 0;
@@ -635,11 +654,11 @@ class CartBounty_Public{
 				$cooldown_period = apply_filters( 'cartbounty_cart_cooldown_period', $time['two_hours'] );
 			}
 
-			//First part of the select that looks for the same seesion ID in the given time period
+			//First part of the select that looks for the same session ID in the given time period
 			$sql = "SELECT id FROM $cart_table WHERE ( session_id = %s AND time > %s )";
 			$params = [ $cart['session_id'], $cooldown_period ];
 
-			//Second part of the select if we know the IP address which looks for the same IP addres and cart contents in the given time period
+			//Second part of the select if we know the IP address which looks for the same IP address and cart contents in the given time period
 			if( !empty( $user_ip ) ){
 				$sql .= " OR ( ip_address = %s AND cart_hash = %s AND time > %s )";
 				$params = array_merge( $params, [ $user_ip, $cart_hash, $ip_cooldown ] );
@@ -720,7 +739,7 @@ class CartBounty_Public{
 
 		if($duplicate_count){ //If we have updated at least one row
 			if($duplicate_count > 1){ //Checking if we have updated more than a single row to know if there were duplicates
-				$admin = new CartBounty_Admin(CARTBOUNTY_PLUGIN_NAME_SLUG, CARTBOUNTY_VERSION_NUMBER);
+				$admin = $this->admin();
 				$where_sentence = $admin->get_where_sentence('anonymous');
 				//First delete all duplicate anonymous carts
 				$deleted_duplicate_anonymous_carts = $wpdb->query(
@@ -761,12 +780,12 @@ class CartBounty_Public{
 	 */
 	function read_cart(){
 
-		if( !WC()->cart ) return; //Exit if Woocommerce cart has not been initialized
+		if( !WC()->cart ) return; //Exit if WooCommerce cart has not been initialized
 
 		//Retrieving cart total value and currency
 		$cart_total = WC()->cart->total;
 		$cart_currency = $this->get_selected_currency();
-		$current_time = current_time( 'mysql', false ); //Retrieving current time
+		$current_time = current_time( 'mysql', true ); //Retrieving current time
 		$session_id = WC()->session->get( 'cartbounty_session_id' ); //Check if the session is already set
 		
 		if( empty( $session_id ) ){ //If session value does not exist - set one now
@@ -926,6 +945,8 @@ class CartBounty_Public{
 	 */
 	public function restore_classic_checkout_fields(){
 
+		if( !class_exists( 'WooCommerce' ) ) return; //If WooCommerce does not exist
+
 		if( !is_checkout() ) return; //Exit if not on checkout page
 
 		if( has_block( 'woocommerce/checkout' ) ) return; //Stop block checkout detected
@@ -936,7 +957,7 @@ class CartBounty_Public{
 
 		if( !$saved_cart ) return;
 
-		$admin = new CartBounty_Admin( CARTBOUNTY_PLUGIN_NAME_SLUG, CARTBOUNTY_VERSION_NUMBER );
+		$admin = $this->admin();
 		$get_consent_field_data = $admin->get_consent_field_data( 'field_name' );
 		$other_fields = maybe_unserialize( $saved_cart->other_fields );
 		$location_data = $admin->get_cart_location( $saved_cart->location );
@@ -1005,6 +1026,8 @@ class CartBounty_Public{
 	 */
 	public function restore_block_checkout_fields(){
 
+		if( !class_exists( 'WooCommerce' ) ) return; //If WooCommerce does not exist
+
 		if( !apply_filters( 'cartbounty_restore_block_checkout', true ) ) return;
 
 		if( !function_exists( 'is_admin' ) || !function_exists( 'is_user_logged_in' ) ) return;
@@ -1013,17 +1036,15 @@ class CartBounty_Public{
 
 		if( WC()->session ){
 
-			$admin = new CartBounty_Admin( CARTBOUNTY_PLUGIN_NAME_SLUG, CARTBOUNTY_VERSION_NUMBER );
-			$session_id = WC()->session->get_customer_id();
-			$counter = $admin->get_cartbounty_transient( 'cartbounty_session' . $session_id );
+			$admin = $this->admin();
+			$counter = $admin->get_cartbounty_transient( 'counter', $unique = true );
 
-			if( !$counter ){
+			if( !$counter ) {
 				$counter = 0;
 			}
 
 			$counter++;
-
-			$admin->set_cartbounty_transient( 'cartbounty_session' . $session_id , $counter, 30 ); //30 second expiration
+			$admin->set_cartbounty_transient( 'counter', $counter, 30, $unique = true ); //Expires in 30 seconds
 
 			if( $counter < 5 ){
 				$this->update_woocommerce_database_session();
@@ -1038,17 +1059,16 @@ class CartBounty_Public{
 	 */
 	public function update_woocommerce_database_session( $saved_cart = false ){
 		global $wpdb;
-		$admin = new CartBounty_Admin( CARTBOUNTY_PLUGIN_NAME_SLUG, CARTBOUNTY_VERSION_NUMBER );
+		$admin = $this->admin();
 		$session_table_name = $wpdb->prefix . 'woocommerce_sessions';
 		$is_block_checkout = false;
 		$use_same_address_for_billing = false;
 		$new_session_data = array();
 
-	    if( WC()->session ){
+		if( WC()->session ){
 
-	    	if( !$saved_cart ){
-				$public = new CartBounty_Public( CARTBOUNTY_PLUGIN_NAME_SLUG, CARTBOUNTY_VERSION_NUMBER );
-				$saved_cart = $public->get_saved_cart();
+			if( !$saved_cart ){
+				$saved_cart = $this->get_saved_cart();
 			}
 
 			if( !$saved_cart ) return; //Stop if abandoned cart missing
@@ -1089,97 +1109,115 @@ class CartBounty_Public{
 			if( !$session_data ) return; //Stop if session data missing
 
 			$session_data = maybe_unserialize( $session_data );
+			$customer = array(); //Always create a $customer array, even if 'customer' is null or missing
 
-			if( isset( $session_data['customer'] ) ){
-				$customer = maybe_unserialize( $session_data['customer'] );
+			if( array_key_exists( 'customer', $session_data ) && ! is_null( $session_data['customer'] ) ){
+				$customer = (array) $session_data['customer']; // no maybe_unserialize here anymore
+			}
 
-				if( ( isset( $customer['email'] ) && !empty( $customer['email'] ) ) || ( isset( $customer['phone'] ) && !empty( $customer['phone'] ) ) ) return; //Stop in case session already has email or phone number stored				
+			//Don't overwrite if session already has contact details. Check both plain and billing_* variants.
+			if( ( !empty( $customer['email'] ) || !empty( $customer['billing_email'] ) ) || ( !empty( $customer['phone'] ) || !empty( $customer['billing_phone'] ) ) ) return;
 
-				//In case of data coming from block checkout - replace billing details with shipping unless both shipping and billing fields are present
-				if( isset( $other_fields['converted-shipping-to-billing'] ) ){ //If during abandoned cart saving process we converted shipping fields to billing - must use shipping fields as billing fields
-					$use_same_address_for_billing = true;
-				}
+			//In case of data coming from block checkout - replace billing details with shipping unless both shipping and billing fields are present
+			if( isset( $other_fields['converted-shipping-to-billing'] ) ){ //If during abandoned cart saving process we converted shipping fields to billing - must use shipping fields as billing fields
+				$use_same_address_for_billing = true;
+			}
 
-				//Mapping data
-				foreach( $saved_cart as $key => $value ){
-					
-					if( $key == 'name' ){
+			//Mapping data
+			foreach( $saved_cart as $key => $value ){
+				
+				if( $key == 'name' ){
 
-						if( $use_same_address_for_billing ){
-							$new_session_data['shipping_first_' . $key] = $value;
-
-						}else{
-							$new_session_data['first_' . $key] = $value;
-						}
-					
-					}elseif( $key == 'surname' ){
-
-						if( $use_same_address_for_billing ){
-							$new_session_data['shipping_last_name'] = $value;
-
-						}else{
-							$new_session_data['last_name'] = $value;
-						}
-
-					}elseif( $key == 'phone' && $use_same_address_for_billing ){
-						$new_session_data['shipping_' . $key] = $value;
-
-					}elseif( $key == 'location' ){
-						$location_data = $value;
-						
-						foreach( $location_data as $key => $value){
-
-							if( $use_same_address_for_billing && in_array( $key, ['country', 'city', 'postcode'] ) ){
-								$new_session_data['shipping_' . $key] = $value;
-
-							}else{
-								$new_session_data[$key] = $value;
-							}
-						}
-
-					}elseif( $key == 'other_fields' ){
-						$other_fields_data = $value;
-						
-						foreach( $other_fields_data as $key => $value ){
-
-							if( strpos( $key, 'billing-' ) === 0 && $use_same_address_for_billing ){
-								$new_key = str_replace( 'billing-', 'shipping_', $key );
-								$new_session_data[$new_key] = $value;
-
-							}elseif( strpos( $key, 'billing-' ) === 0 ){
-
-								if( $key == 'billing-company' || $key == 'billing-phone' || $key == 'billing-address_1' || $key == 'billing-address_2' || 'billing-state' ){
-									$new_key = str_replace( 'billing-', '', $key );
-
-								}else{
-									$new_key = str_replace( 'billing-', 'billing_', $key );
-								}
-								
-								$new_session_data[$new_key] = $value;
-							
-							}elseif( strpos( $key, 'shipping-' ) === 0 ){
-								$new_key = str_replace( 'shipping-', 'shipping_', $key );
-								$new_session_data[$new_key] = $value;
-							}
-						}
+					if( $use_same_address_for_billing ){
+						$new_session_data['shipping_first_' . $key] = $value;
 
 					}else{
-						$new_session_data[$key] = $value;
+						$new_session_data['first_' . $key] = $value;
 					}
+				
+				}elseif( $key == 'surname' ){
+
+					if( $use_same_address_for_billing ){
+						$new_session_data['shipping_last_name'] = $value;
+
+					}else{
+						$new_session_data['last_name'] = $value;
+					}
+
+				}elseif( $key == 'phone' && $use_same_address_for_billing ){
+					$new_session_data['shipping_' . $key] = $value;
+
+				}elseif( $key == 'location' ){
+					$location_data = $value;
+					
+					foreach( $location_data as $key => $value){
+
+						if( $use_same_address_for_billing && in_array( $key, ['country', 'city', 'postcode'] ) ){
+							$new_session_data['shipping_' . $key] = $value;
+
+						}else{
+							$new_session_data[$key] = $value;
+						}
+					}
+
+				}elseif( $key == 'other_fields' ){
+					$other_fields_data = $value;
+					
+					foreach( $other_fields_data as $key => $value ){
+
+						if( strpos( $key, 'billing-' ) === 0 && $use_same_address_for_billing ){
+							$new_key = str_replace( 'billing-', 'shipping_', $key );
+							$new_session_data[$new_key] = $value;
+
+						}elseif( strpos( $key, 'billing-' ) === 0 ){
+
+							if( $key == 'billing-company' || $key == 'billing-phone' || $key == 'billing-address_1' || $key == 'billing-address_2' || 'billing-state' ){
+								$new_key = str_replace( 'billing-', '', $key );
+
+							}else{
+								$new_key = str_replace( 'billing-', 'billing_', $key );
+							}
+							
+							$new_session_data[$new_key] = $value;
+						
+						}elseif( strpos( $key, 'shipping-' ) === 0 ){
+							$new_key = str_replace( 'shipping-', 'shipping_', $key );
+							$new_session_data[$new_key] = $value;
+						}
+					}
+
+				}else{
+					$new_session_data[$key] = $value;
 				}
-
-				$customer = array_merge( $customer, $new_session_data );
-				$session_data['customer'] = maybe_serialize( $customer );
-				$new_session_data = maybe_serialize( $session_data );
-
-				$result = $wpdb->update(
-					$session_table_name,
-					[ 'session_value' => $new_session_data ],
-					[ 'session_key' => $session_id ],
-					[ '%s' ],
-					[ '%s' ]
-				);
 			}
+
+			//Mirror plain email/phone into billing_* if missing (helps Blocks + classic checkout)
+			if( !empty( $new_session_data['email'] ) && empty( $new_session_data['billing_email'] ) ){
+				$new_session_data['billing_email'] = $new_session_data['email'];
+			}
+
+			if( !empty( $new_session_data['phone'] ) && empty( $new_session_data['billing_phone'] ) ){
+				$new_session_data['billing_phone'] = $new_session_data['phone'];
+			}
+
+			$customer = array_merge( $customer, $new_session_data );
+
+			if( WC()->customer ){
+				$wc_customer = WC()->customer;
+				$customer['id'] = (string) $wc_customer->get_id();
+				$customer['date_modified'] = (string) $wc_customer->get_date_modified( 'edit' );
+			}
+
+			$session_data['customer'] = $customer;
+			$new_session_data = maybe_serialize( $session_data );
+
+			$result = $wpdb->update(
+				$session_table_name,
+				[ 'session_value' => $new_session_data ],
+				[ 'session_key' => $session_id ],
+				[ '%s' ],
+				[ '%s' ]
+			);
 		}
 	}
 
@@ -1191,7 +1229,7 @@ class CartBounty_Public{
 	 */
 	function get_saved_cart(){
 		global $wpdb;
-		$admin = new CartBounty_Admin( CARTBOUNTY_PLUGIN_NAME_SLUG, CARTBOUNTY_VERSION_NUMBER );
+		$admin = $this->admin();
 		$cart_table = $wpdb->prefix . CARTBOUNTY_TABLE_NAME;
 		$cart = $this->read_cart();
 		
@@ -1227,7 +1265,7 @@ class CartBounty_Public{
 
 		if( WC()->session->get( 'cartbounty_from_link' ) ) return; //Exit if user returned from link - it means we have increased this before
 
-		$admin = new CartBounty_Admin( CARTBOUNTY_PLUGIN_NAME_SLUG, CARTBOUNTY_VERSION_NUMBER );
+		$admin = $this->admin();
 		$misc_settings = $admin->get_settings( 'misc_settings' );
 		$misc_settings['recoverable_carts'] = $misc_settings['recoverable_carts'] + 1;
 		update_option( 'cartbounty_misc_settings', $misc_settings );
@@ -1248,7 +1286,7 @@ class CartBounty_Public{
 
 		if( WC()->session->get( 'cartbounty_anonymous_count_increased' ) ) return; //Exit in case we already have run this once
 
-		$admin = new CartBounty_Admin( CARTBOUNTY_PLUGIN_NAME_SLUG, CARTBOUNTY_VERSION_NUMBER );
+		$admin = $this->admin();
 		$misc_settings = $admin->get_settings( 'misc_settings' );
 		$misc_settings['anonymous_carts'] = $misc_settings['anonymous_carts'] + 1;
 		update_option( 'cartbounty_misc_settings', $misc_settings );
@@ -1265,11 +1303,11 @@ class CartBounty_Public{
 
 		if( !WC()->session ) return; //If session does not exist, exit function
 
-		if( WC()->session->get( 'cartbounty_recovered_count_increased' ) ) return; //Exit fnction in case we already have run this once
+		if( WC()->session->get( 'cartbounty_recovered_count_increased' ) ) return; //Exit function in case we already have run this once
 
 		WC()->session->set( 'cartbounty_recovered_count_increased', 1 );
 
-		$admin = new CartBounty_Admin( CARTBOUNTY_PLUGIN_NAME_SLUG, CARTBOUNTY_VERSION_NUMBER );
+		$admin = $this->admin();
 		$misc_settings = $admin->get_settings( 'misc_settings' );
 		$misc_settings['recovered_carts'] = $misc_settings['recovered_carts'] + 1;
 		update_option( 'cartbounty_misc_settings', $misc_settings );
@@ -1284,7 +1322,7 @@ class CartBounty_Public{
 	function decrease_recoverable_cart_count( $count ){
 		if( !class_exists( 'WooCommerce' ) ) return; //If WooCommerce does not exist
 
-		$admin = new CartBounty_Admin( CARTBOUNTY_PLUGIN_NAME_SLUG, CARTBOUNTY_VERSION_NUMBER );
+		$admin = $this->admin();
 		$misc_settings = $admin->get_settings( 'misc_settings' );
 		$misc_settings['recoverable_carts'] = $misc_settings['recoverable_carts'] - $count;
 		update_option( 'cartbounty_misc_settings', $misc_settings ); //Decreasing the count by one abandoned cart
@@ -1304,7 +1342,7 @@ class CartBounty_Public{
 	function decrease_anonymous_cart_count( $count ){
 		if( !class_exists( 'WooCommerce' ) ) return; //If WooCommerce does not exist
 
-		$admin = new CartBounty_Admin( CARTBOUNTY_PLUGIN_NAME_SLUG, CARTBOUNTY_VERSION_NUMBER );
+		$admin = $this->admin();
 		$misc_settings = $admin->get_settings( 'misc_settings' );
 		$misc_settings['anonymous_carts'] = $misc_settings['anonymous_carts'] - $count;
 
@@ -1316,7 +1354,7 @@ class CartBounty_Public{
 	}
 
 	/**
-	 * Outputing email form if anonymous user who is not logged in wants to leave with a full shopping cart
+	 * Outputting email form if anonymous user who is not logged in wants to leave with a full shopping cart
 	 *
 	 * @since    3.0
 	 */
@@ -1325,7 +1363,7 @@ class CartBounty_Public{
 		
 		if( !$this->tool_enabled( 'exit_intent' ) || !WC()->cart ) return; //If Exit Intent disabled or WooCommerce cart does not exist
 
-		$admin = new CartBounty_Admin( CARTBOUNTY_PLUGIN_NAME_SLUG, CARTBOUNTY_VERSION_NUMBER );
+		$admin = $this->admin();
 		$user_is_admin = $admin->user_is_admin();
 		$output = $this->build_exit_intent_output( $user_is_admin ); //Creating the Exit Intent output
 		echo $output;
@@ -1341,7 +1379,7 @@ class CartBounty_Public{
 	 */
 	function build_exit_intent_output( $current_user_is_admin ){
 		global $wpdb;
-		$admin = new CartBounty_Admin(CARTBOUNTY_PLUGIN_NAME_SLUG, CARTBOUNTY_VERSION_NUMBER);
+		$admin = $this->admin();
 		$cart_table = $wpdb->prefix . CARTBOUNTY_TABLE_NAME;
 		$cart = $this->read_cart();
 		$heading = $admin->get_tools_defaults('heading', 'exit_intent');
@@ -1399,15 +1437,15 @@ class CartBounty_Public{
 		}
 
 		$args = array(
-			'image_url' => $image_url,
-			'heading' => $heading,
-			'content' => $content,
-			'main_color' => $main_color,
-			'inverse_color' => $inverse_color,
-			'consent_enabled' => $consent_enabled,
-			'tools_consent' => $tools_consent,
-			'title' => esc_html__( 'You were not leaving your cart just like that, right?', 'woo-save-abandoned-carts' ),
-			'alt' => esc_html__( 'You were not leaving your cart just like that, right?', 'woo-save-abandoned-carts' ),
+			'image_url' 		=> $image_url,
+			'heading' 			=> $heading,
+			'content' 			=> $content,
+			'main_color' 		=> $main_color,
+			'inverse_color' 	=> $inverse_color,
+			'consent_enabled' 	=> $consent_enabled,
+			'tools_consent' 	=> $tools_consent,
+			'title' 			=> esc_html__( 'You were not leaving your cart just like that, right?', 'woo-save-abandoned-carts' ),
+			'alt' 				=> esc_html__( 'You were not leaving your cart just like that, right?', 'woo-save-abandoned-carts' ),
 		);
 
 		return $this->get_template( 'cartbounty-exit-intent.php', $args );
@@ -1421,7 +1459,7 @@ class CartBounty_Public{
 	 * @param    string    $tool    Tool that is being checked
 	 */
 	function tool_enabled( $tool ){
-		$admin = new CartBounty_Admin(CARTBOUNTY_PLUGIN_NAME_SLUG, CARTBOUNTY_VERSION_NUMBER);
+		$admin = $this->admin();
 
 		switch ( $tool ) {
 			case 'exit_intent':
@@ -1434,11 +1472,11 @@ class CartBounty_Public{
 		$user_is_admin = $admin->user_is_admin();
 
 		if( $test_mode_on && $user_is_admin ){
-			//Outputing tool for Testing purposes to Administrators
+			//Outputting tool for Testing purposes to Administrators
 			return true;
 
 		}elseif( $tool_enabled && !$test_mode_on && !is_user_logged_in() ){
-			//Outputing tool for all users who are not logged in
+			//Outputting tool for all users who are not logged in
 			return true;
 			
 		}else{
@@ -1531,11 +1569,11 @@ class CartBounty_Public{
 	 * @param    string    $string $template_path - path to templates.
 	 * @param    string	   $default_path - default path to template files.
 	 */
-	function get_template( $template_name, $args = array(), $tempate_path = '', $default_path = '' ) {
+	function get_template( $template_name, $args = array(), $template_path = '', $default_path = '' ) {
 		if ( is_array( $args ) && isset( $args ) ){
 			extract( $args );
 		}
-		$template_file = $this->get_template_path($template_name, $tempate_path, $default_path);
+		$template_file = $this->get_template_path($template_name, $template_path, $default_path);
 		
 		if ( !file_exists( $template_file ) ){ //Handling error output in case template file does not exist
 			_doing_it_wrong( __FUNCTION__, sprintf( 'Template file %s does not exist.', esc_html( $template_file ) ), '6.1' );
@@ -1635,7 +1673,7 @@ class CartBounty_Public{
 	 * @return   string
 	 */
 	function get_checkout_fields(){
-		$admin = new CartBounty_Admin( CARTBOUNTY_PLUGIN_NAME_SLUG, CARTBOUNTY_VERSION_NUMBER );
+		$admin = $this->admin();
 		$consent_field = $admin->get_consent_field_data( 'field_name' );
 		$selectors = array(
 			"email",

@@ -13,6 +13,27 @@
 class CartBounty_Reports{
 
 	/**
+	 * @since    8.9
+	 * @access   protected
+	 * @var      CartBounty_Admin    $admin    Provides methods to control and extend the plugin's admin area.
+	 */
+	protected $admin = null;
+
+	/**
+	 * @since 8.9
+	 * @access protected
+	 * @return CartBounty_Admin
+	 */
+	protected function admin(){
+		
+		if( $this->admin === null ){
+			$this->admin = new CartBounty_Admin( CARTBOUNTY_PLUGIN_NAME_SLUG, CARTBOUNTY_VERSION_NUMBER );
+		}
+
+		return $this->admin;
+	}
+
+	/**
      * Returning reporting defaults
      *
      * @since    8.0
@@ -369,7 +390,7 @@ class CartBounty_Reports{
 	 * @param    string     $type    		  	  Type of data to return
 	 */
 	public function get_available_report_list_items( $type = 'quick_stats' ){
-		$admin = new CartBounty_Admin( CARTBOUNTY_PLUGIN_NAME_SLUG, CARTBOUNTY_VERSION_NUMBER );
+		$admin = $this->admin();
 		$available_reports = $this->get_available_reports( $type );
 		$active_reports = $this->get_active_reports( $type );
 		$unavailable_reports = array();
@@ -544,7 +565,7 @@ class CartBounty_Reports{
 	 */
 	public function handle_ajax_submit(){
 		
-		if( $this->is_valid_ajax_request( 'period_submit' ) ){ //If this is a valid ajax request coming from preiod submit form
+		if( $this->is_valid_ajax_request( 'period_submit' ) ){ //If this is a valid ajax request coming from period submit form
 			$response = array(
 				'report_data'		=> $this->display_quick_stats(),
 				'chart_data'		=> $this->display_charts(),
@@ -677,7 +698,7 @@ class CartBounty_Reports{
 	 * @return   HTML
 	 */
 	public function display_top_products(){
-		$admin = new CartBounty_Admin( CARTBOUNTY_PLUGIN_NAME_SLUG, CARTBOUNTY_VERSION_NUMBER );
+		$admin = $this->admin();
 		$content = '<div class="cartbounty-report-content cartbounty-empty-top"><div class="cartbounty-empty-text">' . esc_html__( 'N/A', 'woo-save-abandoned-carts' ) .'</div></div>';
 		$date_information = $this->get_selected_date_information();
 		$carts = $this->get_abandoned_cart_rows( $date_information );
@@ -821,7 +842,7 @@ class CartBounty_Reports{
 		
 		if( !$this->is_multiple_currencies() ) return; //Exit if we have just one currency
 
-		$admin = new CartBounty_Admin( CARTBOUNTY_PLUGIN_NAME_SLUG, CARTBOUNTY_VERSION_NUMBER );
+		$admin = $this->admin();
 		$selected_currency = $this->get_selected_currency();
 
 		ob_start(); ?>
@@ -848,7 +869,7 @@ class CartBounty_Reports{
 	 * @return   HTML
 	 */
 	public function display_top_product_count(){
-		$admin = new CartBounty_Admin( CARTBOUNTY_PLUGIN_NAME_SLUG, CARTBOUNTY_VERSION_NUMBER );
+		$admin = $this->admin();
 		ob_start(); ?>
 		<div id="cartbounty-top-product-count" class="cartbounty-options-tooltip">
 			<h3 class="cartbounty-unavailable">
@@ -874,7 +895,7 @@ class CartBounty_Reports{
 	 * @return   HTML
 	 */
 	public function display_selected_country_count(){
-		$admin = new CartBounty_Admin( CARTBOUNTY_PLUGIN_NAME_SLUG, CARTBOUNTY_VERSION_NUMBER );
+		$admin = $this->admin();
 		ob_start(); ?>
 		<div id="cartbounty-country-count" class="cartbounty-options-tooltip">
 			<h3>
@@ -900,7 +921,7 @@ class CartBounty_Reports{
 	 * @return   HTML
 	 */
 	public function display_selected_map_report(){
-		$admin = new CartBounty_Admin( CARTBOUNTY_PLUGIN_NAME_SLUG, CARTBOUNTY_VERSION_NUMBER );
+		$admin = $this->admin();
 		$available_reports = $this->get_available_reports( 'map' );
 		$selected_map = $this->get_selected_map();
 		ob_start(); ?>
@@ -1038,7 +1059,7 @@ class CartBounty_Reports{
 	/**
 	 * Prepare array of different time intervals used for retrieving various report periods
 	 * Time periods:
-	 *		- today:			Period of curent day starting from 00:00:00 until end of today at 23:59:59
+	 *		- today:			Period of current day starting from 00:00:00 until end of today at 23:59:59
 	 *		- yesterday:		Yesterday starting from 00:00:00 until end of yesterday at 23:59:59
 	 *		- week-to-date:		Period of current week starting from Monday 00:00:00 until end of today at 23:59:59
 	 *		- last-week:		Last week, from Monday 00:00:00 to Sunday 23:59:59
@@ -1226,16 +1247,16 @@ class CartBounty_Reports{
 		$end = new DateTime($end_date);
 
 		if( $start->format( 'Y-m' ) == $end->format( 'Y-m' ) ){ //Check if dates are within same year and month
-			$formatted_start = date_i18n( 'M j', $start->getTimestamp() );
-			$formatted_end = date_i18n( 'j, Y', $end->getTimestamp() );
+			$formatted_start = wp_date( 'M j', $start->getTimestamp() );
+			$formatted_end = wp_date( 'j, Y', $end->getTimestamp() );
 
 		}elseif( $start->format( 'Y' ) == $end->format( 'Y' ) ){ //Check if dates are within same year
-			$formatted_start = date_i18n( 'M j', $start->getTimestamp() );
-			$formatted_end = date_i18n( 'M j, Y', $end->getTimestamp() );
+			$formatted_start = wp_date( 'M j', $start->getTimestamp() );
+			$formatted_end = wp_date( 'M j, Y', $end->getTimestamp() );
 
 		}else{ //If dates span across different years
-			$formatted_start = date_i18n( 'M j, Y', $start->getTimestamp() );
-			$formatted_end = date_i18n( 'M j, Y', $end->getTimestamp() );
+			$formatted_start = wp_date( 'M j, Y', $start->getTimestamp() );
+			$formatted_end = wp_date( 'M j, Y', $end->getTimestamp() );
 		}
 
 		//Return the formatted date string
@@ -1251,7 +1272,7 @@ class CartBounty_Reports{
 	 * @return   integer
 	 */
 	public function prepare_daypicker_data(){
-		$admin = new CartBounty_Admin( CARTBOUNTY_PLUGIN_NAME_SLUG, CARTBOUNTY_VERSION_NUMBER );
+		$admin = $this->admin();
 		$defaults = $this->get_defaults();
 		$date_periods = array();
 		$comparison_periods = array();
@@ -1265,7 +1286,7 @@ class CartBounty_Reports{
 			'name' 		=> $this->get_date_periods($report_parameters['period']),
 		);
 
-		if( $user_locale != 'en' ){ //No need to set locale in case we have English language alreayd set
+		if( $user_locale != 'en' ){ //No need to set locale in case we have English language already set
 			$locale = $user_locale;
 		}
 		
@@ -1509,7 +1530,7 @@ class CartBounty_Reports{
 		$intervals = $this->get_time_intervals( $report_parameters['period'], $custom_start, $custom_end );
 		$intervals['compare'] = $report_parameters['compare'];
 
-		//Setting compre period values according to selected compare period
+		//Setting compare period values according to selected compare period
 		if( $report_parameters['compare'] == 'previous-year'){ //In case comparing to previous year period
 			$intervals['compare_start_date'] = $intervals['previous_year_start'];
 			$intervals['compare_end_date'] = $intervals['previous_year_end'];
@@ -1523,7 +1544,7 @@ class CartBounty_Reports{
 	}
 
 	/**
-	 * Method is necessary for formating date coming from DayPicker input field to a date that can be used in a URL
+	 * Method is necessary for formatting date coming from DayPicker input field to a date that can be used in a URL
 	 *
 	 * @since    8.0
 	 * @return   string
@@ -1856,7 +1877,7 @@ class CartBounty_Reports{
 	 * @param    string           $report           			Report label
 	 */
 	private function get_abandonment_rate( $carts, $date_information, $report ){
-		$admin = new CartBounty_Admin( CARTBOUNTY_PLUGIN_NAME_SLUG, CARTBOUNTY_VERSION_NUMBER );
+		$admin = $this->admin();
 		$current_period_abandoned_count = 0;
 		$current_period_converted_count = 0;
 		$previous_period_abandoned_count = 0;
@@ -1922,7 +1943,7 @@ class CartBounty_Reports{
 	 * @param    string           $report           			Report label
 	 */
 	private function get_cart_count( $type, $carts, $date_information, $report ){
-		$admin = new CartBounty_Admin( CARTBOUNTY_PLUGIN_NAME_SLUG, CARTBOUNTY_VERSION_NUMBER );
+		$admin = $this->admin();
 		$previous_period_cart_count = 0;
 		$current_period_cart_count = 0;
 		$previous_period_data = array();
@@ -2011,7 +2032,7 @@ class CartBounty_Reports{
 	 * @param    string           $report           			Report label
 	 */
 	private function get_cart_revenue( $type, $carts, $date_information, $report ){
-		$admin = new CartBounty_Admin( CARTBOUNTY_PLUGIN_NAME_SLUG, CARTBOUNTY_VERSION_NUMBER );
+		$admin = $this->admin();
 		$previous_period_value = 0;
 		$current_period_value = 0;
 
@@ -2066,7 +2087,7 @@ class CartBounty_Reports{
 		$result = array();
 
 		if( !empty( $data ) ){
-			$full_period = $this->fill_mising_dates( $data, $start_date, $end_date );
+			$full_period = $this->fill_missing_dates( $data, $start_date, $end_date );
 			
 			foreach( $full_period as $date => $count ){
 				$result[] = array(
@@ -2159,7 +2180,7 @@ class CartBounty_Reports{
 	 * @param    array           $data         Country data
 	 */
 	private function prepare_country_data( $data ){
-		$admin = new CartBounty_Admin( CARTBOUNTY_PLUGIN_NAME_SLUG, CARTBOUNTY_VERSION_NUMBER );
+		$admin = $this->admin();
 		$result = array();
 
 		foreach( $data as $key => $value ){
@@ -2287,20 +2308,20 @@ class CartBounty_Reports{
 	 * @param    array            $start_date          	Start date
 	 * @param    array            $end_date           	End date
 	 */
-	private function fill_mising_dates( $data, $start_date, $end_date ){
+	private function fill_missing_dates( $data, $start_date, $end_date ){
 		$period = array();
 		$start_date = strtotime( $start_date );
 		$end_date = strtotime( $end_date );
 
 		// Loop over each date between start date and end date
 		while( $start_date <= $end_date ){
-			$formated_start_date = date( 'Y-m-d', $start_date ); //Converting current timestamp to Y-m-d format
+			$formatted_start_date = date( 'Y-m-d', $start_date ); //Converting current timestamp to Y-m-d format
 
 			//If the date is in the original array, use the existing value, otherwise, set value to 0
-			if( isset( $data[$formated_start_date] ) ){
-				$period[$formated_start_date] = $data[$formated_start_date];
+			if( isset( $data[$formatted_start_date] ) ){
+				$period[$formatted_start_date] = $data[$formatted_start_date];
 			}else{
-				$period[$formated_start_date] = 0;
+				$period[$formatted_start_date] = 0;
 			}
 
 			$start_date = strtotime( '+1 day', $start_date ); //Moving on to the next day
@@ -2415,7 +2436,7 @@ class CartBounty_Reports{
 	 * @param    array     		  $top_products    	Top products data
 	 */
 	public function get_top_products_skeleton( $top_products = array() ){
-		$admin = new CartBounty_Admin( CARTBOUNTY_PLUGIN_NAME_SLUG, CARTBOUNTY_VERSION_NUMBER );
+		$admin = $this->admin();
 		$position = 0;
 		$on_load = false;
 
@@ -2435,8 +2456,8 @@ class CartBounty_Reports{
 			<?php
 				$position++;
 				$product_title = $product['product_title'] ?? esc_html__( 'n/a', 'woo-save-abandoned-carts' );
-				$image_url = '#';
-				$edit_product_link = '#';
+				$image_url = '';
+				$edit_product_link = '';
 
 				if( !$on_load ){ //If not triggered on page load, but Ajax request
 					$image_url = $admin->get_product_thumbnail_url( $product, 'thumbnail' ) ?? 'na';

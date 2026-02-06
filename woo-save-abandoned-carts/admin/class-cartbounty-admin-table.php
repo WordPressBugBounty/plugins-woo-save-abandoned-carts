@@ -9,11 +9,53 @@
  * @author     Streamline.lv
  */
 
-if (!class_exists('WP_List_Table')) {
-	require_once(ABSPATH . 'wp-admin/includes/class-wp-list-table.php');
+if( !class_exists( 'WP_List_Table' ) ){
+	require_once( ABSPATH . 'wp-admin/includes/class-wp-list-table.php' );
 }
 
 class CartBounty_Table extends WP_List_Table{
+
+	 /**
+	 * @since    8.9
+	 * @access   protected
+	 * @var      CartBounty_Admin    $admin    Provides methods to control and extend the plugin's admin area.
+	 */
+	protected $admin = null;
+
+	/**
+	 * @since    8.9
+	 * @access   protected
+	 * @var      CartBounty_WordPress    $wordpress    Provides methods to control and extend the plugin's automations.
+	 */
+	protected $wordpress = null;
+
+	/**
+	 * @since 8.9
+	 * @access protected
+	 * @return CartBounty_Admin
+	 */
+	protected function admin(){
+		
+		if( $this->admin === null ){
+			$this->admin = new CartBounty_Admin( CARTBOUNTY_PLUGIN_NAME_SLUG, CARTBOUNTY_VERSION_NUMBER );
+		}
+
+		return $this->admin;
+	}
+
+	/**
+	 * @since 8.9
+	 * @access protected
+	 * @return CartBounty_WordPress
+	 */
+	protected function wordpress(){
+		
+		if( $this->wordpress === null ){
+			$this->wordpress = new CartBounty_WordPress();
+		}
+
+		return $this->wordpress;
+	}
 
 	/**
 	* Constructor, we override the parent to pass our own arguments
@@ -24,10 +66,12 @@ class CartBounty_Table extends WP_List_Table{
 	function __construct(){
 		global $status, $page;
 
-		parent::__construct(array(
-			'singular' 	=> 'id',
-			'plural' 	=> 'ids',
-		));
+		parent::__construct(
+			array(
+				'singular' 	=> 'id',
+				'plural' 	=> 'ids',
+			)
+		);
 	}
 	
 	/**
@@ -87,7 +131,7 @@ class CartBounty_Table extends WP_List_Table{
 	 * @param    $item - row (key, value array)
 	 */
 	function column_name( $item ){
-		$admin = new CartBounty_Admin( CARTBOUNTY_PLUGIN_NAME_SLUG, CARTBOUNTY_VERSION_NUMBER );
+		$admin = $this->admin();
 		$cart_status = 'all';
 		$actions = array();
 		$name_array = array();
@@ -180,7 +224,7 @@ class CartBounty_Table extends WP_List_Table{
 	 * @param    $item - row (key, value array)
 	 */
 	function column_location( $item ){
-		$admin = new CartBounty_Admin( CARTBOUNTY_PLUGIN_NAME_SLUG, CARTBOUNTY_VERSION_NUMBER );
+		$admin = $this->admin();
 		$location_array = array();
 
 		$location_data = $admin->get_cart_location( $item['location'] );
@@ -216,13 +260,13 @@ class CartBounty_Table extends WP_List_Table{
 	 * @param    $item - row (key, value array)
 	 */
 	function column_cart_contents( $item ){
-		$admin = new CartBounty_Admin( CARTBOUNTY_PLUGIN_NAME_SLUG, CARTBOUNTY_VERSION_NUMBER );
+		$admin = $this->admin();
 		$cart_contents = $admin->get_saved_cart_contents( $item['cart_contents'] );
 		$output = '';
 		
 		if( $cart_contents ){
 
-			if( $admin->get_settings( 'settings', 'hide_images' ) ){ //Outputing Cart contents as a list
+			if( $admin->get_settings( 'settings', 'hide_images' ) ){ //Outputting Cart contents as a list
 				$output = '<ol class="cartbounty-product-list">';
 
 				foreach( $cart_contents as $product ){
@@ -308,22 +352,26 @@ class CartBounty_Table extends WP_List_Table{
 	 * @param    $item - row (key, value array)
 	 */
 	function column_time( $item ){
-		$time = new DateTime( $item['time'] );
-		$date_iso = $time->format( 'c' );
-		$date_title = date_i18n( 'M d, Y H:i:s', $time->getTimestamp() );
-		$utc_time = $time->format( 'U' );
+		$time = new DateTime( $item['time'], new DateTimeZone( 'UTC' ) );
+		$ts_utc = $time->getTimestamp();
+		$now_utc = current_time( 'timestamp', true );
+		$friendly = wp_date( 'M d, Y', $ts_utc );
+		$date_iso = gmdate( 'c', $ts_utc );
+		$date_title = wp_date( 'M d, Y H:i:s', $ts_utc );
 
-		if( $utc_time > strtotime( '-1 day', current_time( 'timestamp' ) ) ){ //In case the abandoned cart is newly captued
-			 $friendly_time = sprintf(
-				/* translators: %1$s - Time, e.g. 1 minute, 5 hours */
+		if( $ts_utc > ( $now_utc - DAY_IN_SECONDS ) ){
+			$friendly = sprintf(
 				esc_html__( '%1$s ago', 'woo-save-abandoned-carts' ),
-				human_time_diff( $utc_time, current_time( 'timestamp' ) )
+				human_time_diff( $ts_utc, $now_utc )
 			);
-		}else{ //In case the abandoned cart is older tahn 24 hours
-			$friendly_time = date_i18n( 'M d, Y', $time->getTimestamp() );
 		}
 
-		return sprintf( '<svg class="cartbounty-time-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 31.18 31.18"><path d="M15.59,31.18A15.59,15.59,0,1,1,31.18,15.59,15.6,15.6,0,0,1,15.59,31.18Zm0-27.34A11.75,11.75,0,1,0,27.34,15.59,11.76,11.76,0,0,0,15.59,3.84Z"/><path d="M20.39,20.06c-1.16-.55-6-3-6.36-3.19s-.46-.76-.46-1.18V7.79a1.75,1.75,0,1,1,3.5,0v6.88s4,2.06,4.8,2.52a1.6,1.6,0,0,1,.69,2.16A1.63,1.63,0,0,1,20.39,20.06Z"/></svg><time datetime="%s" title="%s">%s</time>', esc_attr( $date_iso ), esc_attr( $date_title ), esc_html( $friendly_time ) );
+		return sprintf(
+			'<svg class="cartbounty-time-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 31.18 31.18"><path d="M15.59,31.18A15.59,15.59,0,1,1,31.18,15.59,15.6,15.6,0,0,1,15.59,31.18Zm0-27.34A11.75,11.75,0,1,0,27.34,15.59,11.76,11.76,0,0,0,15.59,3.84Z"/><path d="M20.39,20.06c-1.16-.55-6-3-6.36-3.19s-.46-.76-.46-1.18V7.79a1.75,1.75,0,1,1,3.5,0v6.88s4,2.06,4.8,2.52a1.6,1.6,0,0,1,.69,2.16A1.63,1.63,0,0,1,20.39,20.06Z"/></svg><time datetime="%s" title="%s">%s</time>',
+			esc_attr( $date_iso ),
+			esc_attr( $date_title ),
+			esc_html( $friendly )
+		);
 	}
 
 	/**
@@ -335,8 +383,9 @@ class CartBounty_Table extends WP_List_Table{
 	 */
 	function column_status( $item ){
 		$admin = new CartBounty_Admin(CARTBOUNTY_PLUGIN_NAME_SLUG, CARTBOUNTY_VERSION_NUMBER);
+		$wordpress = $this->wordpress();
 		$cart_time = strtotime($item['time']);
-		$date = date_create(current_time( 'mysql', false ));
+		$date = date_create(current_time( 'mysql', true ));
 		$current_time = strtotime(date_format($date, 'Y-m-d H:i:s'));
 		$status = '';
 		$cart_waiting_time = $admin->get_waiting_time();
@@ -361,7 +410,6 @@ class CartBounty_Table extends WP_List_Table{
 			}
 
 			if($item['wp_steps_completed']){
-				$wordpress = new CartBounty_WordPress();
 				$email_history = $wordpress->display_email_history( $item['id'] ); //Getting email history of current cart
 				$status .= sprintf('<div class="status-item-container email-history"><span class="cartbounty-tooltip">%s%s</span><span class="status synced wordpress">WP</span></div>', esc_html__('Sent via WordPress', 'woo-save-abandoned-carts'), $email_history );
 			}
@@ -398,7 +446,7 @@ class CartBounty_Table extends WP_List_Table{
 	 * @return   array
 	 */
 	 function get_bulk_actions(){
-	 	$admin = new CartBounty_Admin( CARTBOUNTY_PLUGIN_NAME_SLUG, CARTBOUNTY_VERSION_NUMBER );
+	 	$admin = $this->admin();
 		$actions = array(
 			'delete'	=> esc_html__( 'Delete', 'woo-save-abandoned-carts' ),
 			'pause'		=> esc_html__( 'Pause recovery', 'woo-save-abandoned-carts' ) . ' (' . esc_html__( 'Pro', 'woo-save-abandoned-carts' ) . ')',
@@ -427,7 +475,7 @@ class CartBounty_Table extends WP_List_Table{
 		if( empty( $cart_id ) ) return;
 
 		global $wpdb;
-		$admin = new CartBounty_Admin( CARTBOUNTY_PLUGIN_NAME_SLUG, CARTBOUNTY_VERSION_NUMBER );
+		$admin = $this->admin();
 		$cart_table = $wpdb->prefix . CARTBOUNTY_TABLE_NAME;
 		$processed_rows = 0;
 
