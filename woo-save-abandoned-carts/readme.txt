@@ -5,7 +5,7 @@ Tags: woocommerce, abandoned carts, cart abandonment, exit popup, activecampaign
 Requires at least: 4.6
 Tested up to: 6.9
 Requires PHP: 7.0
-Stable tag: 8.10
+Stable tag: 8.10.1
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -109,7 +109,7 @@ Once the cart is abandoned, an automated reminder or a series of multiple remind
 
 The free version of CartBounty offers a basic solution for sending abandoned cart recovery emails using default WordPress mail server. This recovery option works well if you have a small to medium number of abandoned carts.
 
-Upgrade to [CartBounty Pro](https://www.cartbounty.com) to setup and send automated abandoned cart recovery Push notifications, emails, WhatsApp and SMS text messages using [ActiveCampaign](https://www.activecampaign.com/?_r=5347LGDC)*, [GetResponse](https://www.getresponse.com/?a=vPJGRchyVX&c=cartbounty_free_readme)*, [MailChimp](http://eepurl.com/hHjfrX)*, [WhatsApp](https://www.cartbounty.com/whatsapp-abandoned-cart-recovery-reminders)* or [BulkGate](https://portal.bulkgate.com/join/55713)*.
+Upgrade to [CartBounty Pro](https://www.cartbounty.com) to setup and send automated abandoned cart recovery Push notifications, emails, WhatsApp and SMS text messages using [ActiveCampaign](https://try.activecampaign.com/start)*, [GetResponse](https://www.getresponse.com/?a=vPJGRchyVX&c=cartbounty_free_readme)*, [MailChimp](http://eepurl.com/hHjfrX)*, [WhatsApp](https://www.cartbounty.com/whatsapp-abandoned-cart-recovery-reminders)* or [BulkGate](https://portal.bulkgate.com/join/55713)*.
 
 = What are anonymous carts? =
 
@@ -335,8 +335,8 @@ In addition, the Pro version allows you to select if guests from specific countr
 
 == Changelog ==
 
-= 8.10 =
-* Improved compatibility with the latest WooCommerce blocks checkout field restoration
-* Code refactoring
+= 8.10.1 =
+* Fixed potential strict MySQL DATETIME compatibility issue during shopping cart checks
+* Improved Action Scheduler event registration to prevent duplicate scheduled actions in concurrent request environments
 
 [See changelog for all versions](https://raw.githubusercontent.com/Streamlinelv/woo-save-abandoned-carts/master/changelog.txt).
